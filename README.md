@@ -1,30 +1,251 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app). This repository is designed as a starting point to show a minimal modularization with agents, tools, and components using Market data as the core data source and tools involving acquiring key market data insights from public free APIs.
+## Market Agent Starter (Next.js + AI SDK)
 
-## Getting Started
+This repo is a minimal, **educational starter** for building an interactive “agent + tools + UI” loop using:
 
-First, run the development server:
+- **Next.js App Router** (UI + API route)
+- **AI SDK** (`ai`, `@ai-sdk/react`, `@ai-sdk/openai`) for streaming UI messages + tool calls
+- A **ToolLoopAgent** that can call tools to fetch external market data
+- A small **tool UI renderer** that shows tool progress/output inside the chat
+
+It’s intentionally small so you can fork it and create your own custom variant (different models, tools, schemas, UI, and routing).
+
+---
+
+## What you get
+
+- **Chat UI** that streams assistant responses and tool calls (`app/page.tsx`)
+- **Single API endpoint** that streams agent UI messages (`app/api/chat/route.ts`)
+- **Agent definition** with tools and model selection (`agent/market-agent.tsx`)
+- **Market tool** hitting CoinGecko’s public endpoints (`tool/market-tool.ts`)
+- **Tool invocation renderer** (`components/market-view.tsx`)
+
+---
+
+## How it works (end-to-end)
+
+### 1) UI sends chat messages
+
+`app/page.tsx` uses `useChat()` from `@ai-sdk/react`. By default it POSTs to **`/api/chat`** with `{ messages }`, and receives a streaming response of UI message “parts” (text, step markers, tool calls).
+
+### 2) API streams the agent’s UI response
+
+`app/api/chat/route.ts` passes the incoming `messages` to `createAgentUIStreamResponse({ agent, uiMessages })`, which streams back UI-friendly message parts.
+
+### 3) Agent chooses when to call tools
+
+`agent/market-agent.tsx` defines a `ToolLoopAgent` that uses an OpenAI model and a `tools` map:
+
+- Tool name: `market`
+- Tool implementation: `marketTool`
+
+The agent can emit normal text **and** invoke tools during its reasoning loop.
+
+### 4) Tools stream progress + output
+
+`tool/market-tool.ts` defines a streaming tool via `tool({ inputSchema, execute })`:
+
+- `inputSchema`: validates tool inputs with `zod`
+- `execute`: is an async generator (`async *`) that can yield intermediate states
+
+This tool yields `{ state: "loading" }` first, then `{ state: "ready", marketData: "..." }`.
+
+### 5) UI renders tool calls in the chat
+
+When the agent calls `market`, `useChat()` receives a message part like `tool-market`. `app/page.tsx` routes those parts into `components/market-view.tsx`, which renders:
+
+- input streaming/available (the tool is about to run)
+- output available (loading/ready)
+- output error
+
+---
+
+## Prerequisites
+
+- Node.js (modern LTS recommended)
+- **Bun** (recommended) or npm/pnpm/yarn
+- An OpenAI API key (or swap provider/model; see below)
+
+---
+
+## Setup
+
+### 1) Install dependencies
+
+Using Bun:
+
+```bash
+bun install
+```
+
+Using npm:
+
+```bash
+npm install
+```
+
+### 2) Configure environment variables
+
+Create `.env.local`:
+
+```bash
+OPENAI_API_KEY=your_key_here
+```
+
+Notes:
+
+- The OpenAI provider reads `OPENAI_API_KEY` from the environment.
+- The included market tool uses CoinGecko’s **public** endpoints (no key in this starter), but you may hit rate limits. If you plan to ship, add caching and/or use an authenticated market data provider.
+
+### 3) Run the dev server
 
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quick usage examples
 
-## Learn More
+Try prompts like:
 
-To learn more about Next.js, take a look at the following resources:
+- “What’s the price of ETH in USD?”
+- “Get market data for BTC.”
+- “Fetch the market data for 0x… on base” (contract address flow)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Customization guide (build your own variant)
 
-## Deploy on Vercel
+### Change the model
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Edit `agent/market-agent.tsx`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Swap `openai("gpt-4o")` to a different model string
+- Or switch providers entirely (e.g. another AI SDK provider package)
+
+Keep the rest of the architecture the same.
+
+### Add a new tool (recommended learning path)
+
+1) **Create a tool file** (e.g. `tool/news-tool.ts`)
+   - Define `tool({ description, inputSchema, execute })`
+   - Use `zod` to validate inputs
+   - Yield intermediate states if you want progressive UI updates
+
+2) **Register the tool on the agent**
+
+In `agent/market-agent.tsx`, add it to `tools`:
+
+- `tools: { market: marketTool, news: newsTool }`
+
+3) **Render it in the UI**
+
+In `app/page.tsx`, add a new `case "tool-news": ...` and create a renderer component similar to `components/market-view.tsx`.
+
+### Extend the existing `market` tool
+
+`tool/market-tool.ts` already demonstrates two resolution strategies:
+
+- Token **contract address** (EVM-style `0x...`) + `chain` → CoinGecko platform endpoint
+- Token **symbol/name** → CoinGecko search → coin id → price endpoint
+
+Common extensions:
+
+- Add more chains to `CHAIN_TO_COINGECKO_PLATFORM_ID`
+- Add more output fields (e.g. ATH/ATL, sparkline, etc.)
+- Add caching (server-side) if you hit rate limits
+- Return structured JSON (object) instead of stringifying, then render richer UI in `MarketView`
+
+### Customize the chat UI
+
+Key files:
+
+- `app/page.tsx`: message loop + routing message “parts”
+- `components/chat-input.tsx`: input control + disabled states
+- `components/market-view.tsx`: tool output display
+- `app/globals.css`: global styling (Tailwind)
+
+---
+
+## Project structure
+
+```text
+app/
+  api/chat/route.ts      # POST /api/chat → streams agent UI response
+  page.tsx               # Chat UI using useChat()
+agent/
+  market-agent.tsx       # ToolLoopAgent definition (model + tools)
+tool/
+  market-tool.ts         # Streaming tool (zod schema + execute generator)
+components/
+  chat-input.tsx         # Chat input component
+  market-view.tsx        # Tool invocation renderer
+```
+
+---
+
+## Scripts
+
+```bash
+bun dev     # run locally
+bun build   # production build
+bun start   # run production server
+bun lint    # lint
+```
+
+---
+
+## Deployment notes
+
+This is a standard Next.js App Router project. On Vercel (or similar), ensure:
+
+- `OPENAI_API_KEY` is set in your deployment environment
+- Your chosen model/provider is supported in the runtime you deploy to
+
+---
+
+## Troubleshooting
+
+### Chat input is disabled / can’t send messages
+
+- **Cause**: `useChat()` disables input unless `status === "ready"`.
+- **Fix**:
+  - Make sure the dev server is running (`bun dev`) and the page loads without errors.
+  - If it becomes stuck after an error, refresh the page to reset state.
+
+### 401/403 or “Unauthorized” from the model provider
+
+- **Cause**: Missing or invalid `OPENAI_API_KEY`.
+- **Fix**:
+  - Add `OPENAI_API_KEY=...` to `.env.local`.
+  - **Restart** the dev server after changing env vars.
+  - If deployed, set the env var in your hosting provider’s environment settings.
+
+### The assistant responds, but tools fail (error shown in red)
+
+- **Cause**: The tool threw an error (network failure, bad input, provider response not OK).
+- **Fix**:
+  - Try a simpler input like `ETH` or `BTC`.
+  - For contract addresses, ensure it’s a valid EVM `0x...` address and choose a supported `chain`.
+  - Check the server console for the full error message.
+
+### CoinGecko rate limits / 429 responses
+
+- **Cause**: CoinGecko’s public endpoints can rate-limit.
+- **Fix**:
+  - Add server-side caching (recommended) or backoff/retry logic.
+  - Consider switching to an authenticated market data provider for production usage.
+
+### Tool output looks like a JSON string
+
+- **Cause**: `marketTool` currently returns `marketData` as `JSON.stringify(...)` and `MarketView` renders it directly.
+- **Fix**:
+  - Return a structured object from the tool and render a richer UI in `components/market-view.tsx`.
+
+---
+
+## License
+
+MIT

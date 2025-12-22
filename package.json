@@ -22,6 +22,7 @@
   },
   "description": "Starter project for building market agents using AI and Next.js",
   "scripts": {
+    "bdev": "next build && next dev",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -35,6 +36,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "resumable-stream": "^2.2.9",
+    "streamdown": "^1.6.10",
     "zod": "^4.2.1"
   },
   "devDependencies": {
