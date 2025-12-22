@@ -1,0 +1,50 @@
+{
+  "name": "market-agent-starter",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Ritual Chain",
+  "license": "MIT",
+  "keywords": [
+    "market",
+    "agent",
+    "ai",
+    "nextjs",
+    "react",
+    "tailwindcss"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RitualChain/market-agent-starter"
+  },
+  "homepage": "https://github.com/RitualChain/market-agent-starter",
+  "bugs": {
+    "url": "https://github.com/RitualChain/market-agent-starter/issues"
+  },
+  "description": "Starter project for building market agents using AI and Next.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "3.0.0-beta.111",
+    "@ai-sdk/react": "3.0.0-beta.169",
+    "ai": "6.0.0-beta.166",
+    "next": "^16.1.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "resumable-stream": "^2.2.9",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
