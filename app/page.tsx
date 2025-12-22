@@ -6,9 +6,9 @@ import type { MarketAgentUIMessage } from "@/agent/market-agent";
 import MarketView from "@/components/market-view";
 import type { MarketUIToolInvocation } from "@/tool/market-tool";
 import Image from "next/image";
-import { Icon } from "@iconify/react";
 import { Streamdown } from "streamdown";
 import Link from "next/link";
+import { GitHubIcon, TelegramIcon, XIcon } from "@/components/icons";
 
 function extractTokenCandidateFromText(text: string): string | undefined {
   // Prefer contract addresses if present.
@@ -102,124 +102,74 @@ export default function MarketChat() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-20 border-b border-zinc-900/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-screen-2xl md:max-w-[calc(100%-12rem)] items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <Image
-            src="/logo.png"
-            alt="Market Agent"
-            width={1200}
-            height={1200}
-            className="aspect-square size-8 rounded-md bg-black p-1 object-contain"
-          />
+        <div className="mx-auto flex h-14 w-full max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Market Agent"
+              width={1200}
+              height={1200}
+              className="aspect-square size-8 shrink-0 rounded-md bg-black p-1 object-contain"
+            />
 
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium leading-tight">
-              MarketMind
-            </div>
-            <div className="truncate text-[11px] leading-tight text-zinc-400">
-              AI-powered Market Assistant
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium leading-tight">
+                MarketMind
+              </div>
+              <div className="truncate text-[11px] leading-tight text-zinc-400">
+                AI-powered Market Assistant
+              </div>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+
+          <nav className="flex items-center gap-2">
             <Link
               href="https://github.com/RitualChain/market-agent-starter"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="GitHub"
+              title="GitHub"
+              className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
             >
-              <button
-                role="button"
-                title="GitHub"
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
-              >
-                <Icon
-                  icon="ri:github-fill"
-                  width={20}
-                  height={20}
-                  className="size-5"
-                />
-              </button>
+              <GitHubIcon className="size-5" />
             </Link>
             <Link
               href="https://x.com/BunsDev"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="X (Twitter)"
+              title="X (Twitter)"
+              className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
             >
-              <button
-                role="button"
-                title="Twitter"
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
-              >
-                <Icon
-                  icon="ri:twitter-x-fill"
-                  width={20}
-                  height={20}
-                  className="size-5"
-                />
-              </button>
+              <XIcon className="size-5" />
             </Link>
             <Link
               href="https://t.me/RitualChain"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Telegram"
+              title="Telegram"
+              className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
             >
-              <button
-                role="button"
-                title="Telegram"
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
-              >
-                <Icon
-                  icon="ri:telegram-fill"
-                  width={20}
-                  height={20}
-                  className="size-5"
-                />
-              </button>
+              <TelegramIcon className="size-5" />
             </Link>
-          </div>
+          </nav>
         </div>
       </header>
       <main className="mx-auto w-full max-w-screen-2xl px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-3xl lg:max-w-[calc(100%-12rem)]">
+        <div className="mx-auto w-full max-w-3xl min-w-full md:min-w-0 md:max-w-none lg:max-w-screen-2xl">
           {messages?.length ? null : (
             <div className="pt-8 sm:pt-12">
               <div className="rounded-3xl border border-zinc-900/60 bg-zinc-950/30 p-4 shadow-sm backdrop-blur sm:p-6">
                 <div className="text-base font-semibold sm:text-lg">
-                  Welcome — ask me anything about crypto markets
+                  Welcome, ask MarketMind AI anything about crypto markets
                 </div>
                 <div className="mt-2 text-sm text-zinc-400">
-                  I can fetch live pricing + key stats (market cap, 24h volume,
-                  24h change) for{" "}
-                  <span className="font-medium text-zinc-300">tickers</span>{" "}
-                  (ETH, BTC, SOL) or{" "}
-                  <span className="font-medium text-zinc-300">
-                    contract addresses
-                  </span>{" "}
-                  (0x…).
-                </div>
-
-                <div className="mt-4 grid gap-2 text-sm text-zinc-300 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-zinc-900/60 bg-black/20 p-3">
-                    <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                      Good prompts
-                    </div>
-                    <div className="mt-2 space-y-1 text-[13px] leading-relaxed">
-                      <div>“Price of ETH”</div>
-                      <div>“What’s the market cap of BTC?”</div>
-                      <div>“Compare SOL vs ETH”</div>
-                      <div>“Show 0x… price on Base”</div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-900/60 bg-black/20 p-3">
-                    <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                      Tip
-                    </div>
-                    <div className="mt-2 text-[13px] leading-relaxed">
-                      Use the suggestion pills above the input to get started
-                      fast — they’ll update based on what you’re asking about.
-                    </div>
-                    <div className="mt-2 text-[11px] text-zinc-500">
-                      Not financial advice.
-                    </div>
-                  </div>
+                  MarketMind AI can fetch live pricing and key stats (e.g.
+                  market cap, 24h volume, 24h change) for tickers (e.g. ETH,
+                  BTC, SOL) or contract addresses (e.g. 0x…). You can also
+                  compare prices of different tokens, or get the price of a
+                  specific token.
                 </div>
               </div>
             </div>
@@ -320,7 +270,7 @@ export default function MarketChat() {
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-900/60 bg-background">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-background" />
         <div className="pointer-events-auto relative w-full px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-3xl lg:max-w-[calc(100%-12rem)]">
+          <div className="mx-auto w-full max-w-3xl min-w-full md:min-w-0 md:max-w-none lg:max-w-screen-2xl">
             <ChatInput
               status={status}
               stop={stop}
