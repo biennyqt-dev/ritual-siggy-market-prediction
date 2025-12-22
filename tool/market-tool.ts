@@ -81,7 +81,6 @@ export const marketTool = tool({
     chain: SupportedChain;
   }) {
     const tokenRaw = input.token.trim();
-    const token = tokenRaw;
     const tokenLower = tokenRaw.toLowerCase();
     const vsCurrency = input.vsCurrency.trim().toLowerCase();
     const chain = input.chain;

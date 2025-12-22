@@ -13,19 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Market Agent Starter",
+  title: "MarketMind",
   description:
-    "Starter project for building market agents using AI and Next.js",
+    "AI-powered Market Assistant",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Market Agent Starter",
+    title: "MarketMind",
     description:
-      "A starter project for building market agents using AI and Next.js",
+      "AI-powered Market Assistant",
     type: "website",
     url: "https://market-agent-starter.vercel.app",
-    siteName: "Market Agent Starter",
+    siteName: "MarketMind",
     locale: "en_US",
     images: [
       {

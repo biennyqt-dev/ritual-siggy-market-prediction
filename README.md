@@ -13,11 +13,17 @@ It’s intentionally small so you can fork it and create your own custom variant
 
 ## What you get
 
-- **Chat UI** that streams assistant responses and tool calls (`app/page.tsx`)
+- **Chat UI** (Vercel-ish dark, mobile-first) with a fixed composer + suggestion pills (`app/page.tsx`, `components/chat-input.tsx`)
+- **Tool UI** that renders tool progress/output inline as “cards” (`components/market-view.tsx`)
 - **Single API endpoint** that streams agent UI messages (`app/api/chat/route.ts`)
 - **Agent definition** with tools and model selection (`agent/market-agent.tsx`)
 - **Market tool** hitting CoinGecko’s public endpoints (`tool/market-tool.ts`)
-- **Tool invocation renderer** (`components/market-view.tsx`)
+
+---
+
+## UI preview
+
+![Chat conversation](public/assets/chat-conversation.png)
 
 ---
 
@@ -129,18 +135,19 @@ Keep the rest of the architecture the same.
 
 ### Add a new tool (recommended learning path)
 
-1) **Create a tool file** (e.g. `tool/news-tool.ts`)
+1. **Create a tool file** (e.g. `tool/news-tool.ts`)
+
    - Define `tool({ description, inputSchema, execute })`
    - Use `zod` to validate inputs
    - Yield intermediate states if you want progressive UI updates
 
-2) **Register the tool on the agent**
+2. **Register the tool on the agent**
 
 In `agent/market-agent.tsx`, add it to `tools`:
 
 - `tools: { market: marketTool, news: newsTool }`
 
-3) **Render it in the UI**
+3. **Render it in the UI**
 
 In `app/page.tsx`, add a new `case "tool-news": ...` and create a renderer component similar to `components/market-view.tsx`.
 
@@ -162,8 +169,8 @@ Common extensions:
 
 Key files:
 
-- `app/page.tsx`: message loop + routing message “parts”
-- `components/chat-input.tsx`: input control + disabled states
+- `app/page.tsx`: chat shell (header/content/footer), message loop + routing message “parts”, builds dynamic suggestion prompts
+- `components/chat-input.tsx`: composer (`textarea`), Enter-to-send, and optional suggestion pills
 - `components/market-view.tsx`: tool output display
 - `app/globals.css`: global styling (Tailwind)
 
@@ -174,6 +181,8 @@ Key files:
 ```text
 app/
   api/chat/route.ts      # POST /api/chat → streams agent UI response
+  globals.css            # global theme + markdown tweaks
+  layout.tsx             # app shell + fonts
   page.tsx               # Chat UI using useChat()
 agent/
   market-agent.tsx       # ToolLoopAgent definition (model + tools)
@@ -182,6 +191,10 @@ tool/
 components/
   chat-input.tsx         # Chat input component
   market-view.tsx        # Tool invocation renderer
+public/
+  assets/
+    chat-conversation.png
+  logo.png
 ```
 
 ---
