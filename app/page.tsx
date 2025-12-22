@@ -102,7 +102,7 @@ export default function MarketChat() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-20 border-b border-zinc-900/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-screen-2xl md:max-w-none items-center justify-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 w-full max-w-screen-2xl md:max-w-[calc(100%-12rem)] items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Image
             src="/logo.png"
             alt="Market Agent"
@@ -111,13 +111,15 @@ export default function MarketChat() {
             className="aspect-square size-8 rounded-md bg-black p-1 object-contain"
           />
 
-          <div className="flex min-w-0 flex-col">
-            <div className="text-sm font-medium">MarketMind</div>
-            <div className="text-[11px] text-zinc-400">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium leading-tight">
+              MarketMind
+            </div>
+            <div className="truncate text-[11px] leading-tight text-zinc-400">
               AI-powered Market Assistant
             </div>
           </div>
-          <div className="flex flex-cols items-end justify-center gap-1 ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <Link
               href="https://github.com/RitualChain/market-agent-starter"
               target="_blank"
@@ -126,7 +128,7 @@ export default function MarketChat() {
               <button
                 role="button"
                 title="GitHub"
-                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
               >
                 <Icon
                   icon="ri:github-fill"
@@ -144,7 +146,7 @@ export default function MarketChat() {
               <button
                 role="button"
                 title="Twitter"
-                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
               >
                 <Icon
                   icon="ri:twitter-x-fill"
@@ -162,7 +164,7 @@ export default function MarketChat() {
               <button
                 role="button"
                 title="Telegram"
-                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-zinc-900/60 bg-zinc-950/30 text-zinc-200 hover:bg-zinc-900/40"
               >
                 <Icon
                   icon="ri:telegram-fill"
@@ -175,8 +177,8 @@ export default function MarketChat() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-screen-2xl md:max-w-screen-2xl px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-3xl md:max-w-screen-2xl md:px-8">
+      <main className="mx-auto w-full max-w-screen-2xl px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl lg:max-w-[calc(100%-12rem)]">
           {messages?.length ? null : (
             <div className="pt-8 sm:pt-12">
               <div className="rounded-3xl border border-zinc-900/60 bg-zinc-950/30 p-4 shadow-sm backdrop-blur sm:p-6">
@@ -317,17 +319,14 @@ export default function MarketChat() {
       {/* Full-width fixed composer (ChatGPT-style) */}
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-900/60 bg-background">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-background" />
-        <div className="pointer-events-auto relative w-full px-4 pt-2 pb-4 sm:px-6 lg:px-8 md:pt-4 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto w-full max-w-3xl md:max-w-none">
+        <div className="pointer-events-auto relative w-full px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-3xl lg:max-w-[calc(100%-12rem)]">
             <ChatInput
               status={status}
               stop={stop}
               suggestions={suggestions}
               onSubmit={(text: string) => sendMessage({ text })}
             />
-            {/* <div className="mt-2 text-center text-[11px] text-zinc-500">
-              Tools stream inline · Markdown supported
-            </div> */}
           </div>
         </div>
       </footer>
