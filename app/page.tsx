@@ -117,7 +117,7 @@ export default function MarketChat() {
               AI-powered Market Assistant
             </div>
           </div>
-          <div className="flex flex-col items-end justify-center gap-2 ml-auto">
+          <div className="flex flex-cols items-end justify-center gap-1 ml-auto">
             <Link
               href="https://github.com/RitualChain/market-agent-starter"
               target="_blank"
@@ -125,10 +125,51 @@ export default function MarketChat() {
             >
               <button
                 role="button"
-                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 px-2 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40 sm:px-3"
+                title="GitHub"
+                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
               >
-                <Icon icon="mdi:github" className="size-5 text-zinc-200" />
-                <span className="hidden md:block">GitHub</span>
+                <Icon
+                  icon="ri:github-fill"
+                  width={20}
+                  height={20}
+                  className="size-5"
+                />
+              </button>
+            </Link>
+            <Link
+              href="https://x.com/BunsDev"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button
+                role="button"
+                title="Twitter"
+                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
+              >
+                <Icon
+                  icon="ri:twitter-x-fill"
+                  width={20}
+                  height={20}
+                  className="size-5"
+                />
+              </button>
+            </Link>
+            <Link
+              href="https://t.me/RitualChain"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button
+                role="button"
+                title="Telegram"
+                className="flex items-center gap-2 rounded-2xl border border-zinc-900/60 bg-zinc-950/30 p-2 text-xs font-medium text-zinc-200 hover:bg-zinc-900/40"
+              >
+                <Icon
+                  icon="ri:telegram-fill"
+                  width={20}
+                  height={20}
+                  className="size-5"
+                />
               </button>
             </Link>
           </div>
