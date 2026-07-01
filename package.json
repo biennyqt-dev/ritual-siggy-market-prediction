@@ -2,7 +2,7 @@
   "name": "siggy-prediction-market",
   "version": "0.1.0",
   "private": true,
-  "author": "Ritual Chain",
+  "author": "biennyqt-dev",
   "license": "MIT",
   "keywords": [
     "market",
@@ -14,11 +14,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/RitualChain/market-agent-starter"
+    "url": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction.git"
   },
-  "homepage": "https://github.com/RitualChain/market-agent-starter",
+  "homepage": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction",
   "bugs": {
-    "url": "https://github.com/RitualChain/market-agent-starter/issues"
+    "url": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction/issues"
   },
   "description": "SIGGY Prediction Market on Ritual Chain",
   "scripts": {

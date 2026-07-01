@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 describe("SIGGY async lifecycle contract", () => {
   it("keeps every Ritual lifecycle state represented", async () => {
     const source = await import("node:fs").then((fs) =>
-      fs.readFileSync("lib/types.ts", "utf8")
+      fs.readFileSync("src/lib/types.ts", "utf8")
     );
     for (const status of [
       "SUBMITTING",
@@ -22,7 +22,7 @@ describe("SIGGY async lifecycle contract", () => {
 
   it("keeps predictions open until an on-chain market resolution", async () => {
     const source = await import("node:fs").then((fs) =>
-      fs.readFileSync("components/siggy-dashboard.tsx", "utf8")
+      fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8")
     );
     expect(source).not.toContain('status: "WON",');
     expect(source).toContain('functionName: "markets"');
@@ -31,7 +31,7 @@ describe("SIGGY async lifecycle contract", () => {
 
   it("ships theme, music, search, and RITUAL-denominated controls", async () => {
     const fs = await import("node:fs");
-    const dashboard = fs.readFileSync("components/siggy-dashboard.tsx", "utf8");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
     expect(dashboard).toContain("Switch to ${theme");
     expect(dashboard).toContain("/audio/siggy-arcade.mp3");
     expect(dashboard).toContain("/api/markets?q=");
@@ -43,8 +43,8 @@ describe("SIGGY async lifecycle contract", () => {
 
   it("ships the SIGGY logo, sourced alerts, and dark-card contrast fix", async () => {
     const fs = await import("node:fs");
-    const dashboard = fs.readFileSync("components/siggy-dashboard.tsx", "utf8");
-    const styles = fs.readFileSync("app/globals.css", "utf8");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const styles = fs.readFileSync("src/app/globals.css", "utf8");
 
     expect(fs.statSync("public/siggy-logo.webp").size).toBeGreaterThan(10_000);
     expect(dashboard).toContain("/siggy-logo.webp");
@@ -60,8 +60,8 @@ describe("SIGGY async lifecycle contract", () => {
 
   it("preflights predictions and uses buffered chain gas", async () => {
     const fs = await import("node:fs");
-    const dashboard = fs.readFileSync("components/siggy-dashboard.tsx", "utf8");
-    const contract = fs.readFileSync("lib/siggy-contract.ts", "utf8");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const contract = fs.readFileSync("src/lib/siggy-contract.ts", "utf8");
 
     expect(dashboard).toContain("estimateContractGas");
     expect(dashboard).toContain('blockTag: "latest"');
@@ -74,15 +74,15 @@ describe("SIGGY async lifecycle contract", () => {
 
   it("uses live providers without fabricated market or chart fallbacks", async () => {
     const fs = await import("node:fs");
-    const dashboard = fs.readFileSync("components/siggy-dashboard.tsx", "utf8");
-    const chart = fs.readFileSync("components/market-chart.tsx", "utf8");
-    const marketsRoute = fs.readFileSync("app/api/markets/route.ts", "utf8");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const chart = fs.readFileSync("src/components/market-chart.tsx", "utf8");
+    const marketsRoute = fs.readFileSync("src/app/api/markets/route.ts", "utf8");
     const historyRoute = fs.readFileSync(
-      "app/api/market-history/route.ts",
+      "src/app/api/market-history/route.ts",
       "utf8"
     );
-    const intelRoute = fs.readFileSync("app/api/intel/route.ts", "utf8");
-    const gdelt = fs.readFileSync("lib/gdelt.ts", "utf8");
+    const intelRoute = fs.readFileSync("src/app/api/intel/route.ts", "utf8");
+    const gdelt = fs.readFileSync("src/lib/gdelt.ts", "utf8");
 
     expect(dashboard).not.toContain("fallbackMarkets");
     expect(dashboard).not.toContain("Resilient preview");

@@ -14,7 +14,6 @@ SIGGY is an AI-assisted prediction market dashboard built for Ritual Chain. It p
 - Native RITUAL balance polling every five seconds
 - YES/NO position flow with explicit transaction lifecycle states
 - On-chain market settlement polling; positions remain OPEN until resolution
-- Local preview positions before contract configuration
 - Position and transaction history
 - Downloadable win image and X sharing link
 - Solidity prediction-market contract with authenticated sovereign-agent callbacks
@@ -63,7 +62,7 @@ The deployment script compiles `contracts/src/SiggyPredictionMarket.sol`, deploy
 NEXT_PUBLIC_SIGGY_CONTRACT=0x...
 ```
 
-Restart the app. Positions will then submit real wallet transactions instead of using local preview storage.
+Restart the app. Positions will then submit real wallet transactions through the configured contract.
 
 ## Verification
 
@@ -78,10 +77,13 @@ The contract tests compile Solidity with `solc` and verify the canonical Ritual 
 
 ## Architecture
 
-- `app/` — Next.js dashboard, providers, and live-data API routes
-- `components/` — wallet, chart, history, trading, and win-sharing UI
+- `src/app/` — Next.js dashboard, providers, and live-data API routes
+- `src/components/` — wallet, chart, history, trading, and win-sharing UI
+- `src/agent/` and `src/tool/` — autonomous market-agent building blocks
 - `contracts/` — Solidity market contract, Foundry test, and deploy script
-- `lib/` — Ritual chain configuration and shared market types
+- `src/lib/` — Ritual chain configuration and shared market types
+- `public/` — logo, music, and static browser assets
+- `index.html` — static repository entry page; Next.js runs from `src/app/`
 - `scripts/` — local-key deployment and read-only chain checks
 - `test/` — Solidity compile and frontend state tests
 

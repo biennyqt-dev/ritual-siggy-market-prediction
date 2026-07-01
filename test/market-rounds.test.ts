@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   marketCloseTime,
   marketRoundKeys,
-} from "../lib/siggy-contract";
+} from "../src/lib/siggy-contract";
 
 describe("SIGGY market rounds", () => {
   const now = Math.floor(Date.parse("2026-07-01T12:00:00Z") / 1000);
