@@ -77,13 +77,13 @@ The contract tests compile Solidity with `solc` and verify the canonical Ritual 
 
 ## Architecture
 
-- `src/app/` — Next.js dashboard, providers, and live-data API routes
+- `app/` — Vercel-detectable Next.js dashboard, providers, and API routes
 - `src/components/` — wallet, chart, history, trading, and win-sharing UI
 - `src/agent/` and `src/tool/` — autonomous market-agent building blocks
 - `contracts/` — Solidity market contract, Foundry test, and deploy script
 - `src/lib/` — Ritual chain configuration and shared market types
 - `public/` — logo, music, and static browser assets
-- `index.html` — static repository entry page; Next.js runs from `src/app/`
+- `index.html` — static repository entry page; Next.js runs from `app/`
 - `scripts/` — local-key deployment and read-only chain checks
 - `test/` — Solidity compile and frontend state tests
 

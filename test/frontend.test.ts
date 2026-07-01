@@ -44,7 +44,7 @@ describe("SIGGY async lifecycle contract", () => {
   it("ships the SIGGY logo, sourced alerts, and dark-card contrast fix", async () => {
     const fs = await import("node:fs");
     const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
-    const styles = fs.readFileSync("src/app/globals.css", "utf8");
+    const styles = fs.readFileSync("app/globals.css", "utf8");
 
     expect(fs.statSync("public/siggy-logo.webp").size).toBeGreaterThan(10_000);
     expect(dashboard).toContain("/siggy-logo.webp");
@@ -76,12 +76,12 @@ describe("SIGGY async lifecycle contract", () => {
     const fs = await import("node:fs");
     const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
     const chart = fs.readFileSync("src/components/market-chart.tsx", "utf8");
-    const marketsRoute = fs.readFileSync("src/app/api/markets/route.ts", "utf8");
+    const marketsRoute = fs.readFileSync("app/api/markets/route.ts", "utf8");
     const historyRoute = fs.readFileSync(
-      "src/app/api/market-history/route.ts",
+      "app/api/market-history/route.ts",
       "utf8"
     );
-    const intelRoute = fs.readFileSync("src/app/api/intel/route.ts", "utf8");
+    const intelRoute = fs.readFileSync("app/api/intel/route.ts", "utf8");
     const gdelt = fs.readFileSync("src/lib/gdelt.ts", "utf8");
 
     expect(dashboard).not.toContain("fallbackMarkets");
