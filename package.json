@@ -1,0 +1,67 @@
+{
+  "name": "siggy-prediction-market",
+  "version": "0.1.0",
+  "private": true,
+  "author": "biennyqt-dev",
+  "license": "MIT",
+  "keywords": [
+    "market",
+    "agent",
+    "ai",
+    "nextjs",
+    "react",
+    "tailwindcss"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction.git"
+  },
+  "homepage": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction",
+  "bugs": {
+    "url": "https://github.com/biennyqt-dev/ritual-siggy-market-prediction/issues"
+  },
+  "description": "SIGGY Prediction Market on Ritual Chain",
+  "scripts": {
+    "bdev": "next build && next dev",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "deploy:ritual": "node --env-file-if-exists=.env.local scripts/deploy.mjs",
+    "verify:chain": "node scripts/verify-chain.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "3.0.0-beta.111",
+    "@ai-sdk/react": "3.0.0-beta.169",
+    "ai": "6.0.0-beta.166",
+    "@tanstack/react-query": "5.101.2",
+    "lightweight-charts": "5.2.0",
+    "lucide-react": "1.22.0",
+    "next": "^16.1.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "resumable-stream": "^2.2.9",
+    "streamdown": "^1.6.10",
+    "viem": "2.53.1",
+    "wagmi": "3.6.21",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "4.1.9",
+    "solc": "0.8.35"
+  },
+  "overrides": {
+    "postcss": "8.5.16",
+    "tmp": "0.2.7",
+    "ws": "8.21.0"
+  }
+}
