@@ -1,31 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "MarketMind",
-  description:
-    "AI-powered Market Assistant",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://127.0.0.1:3000"
+  ),
+  title: "SIGGY Prediction Market",
+  description: "Live prediction markets and sovereign-agent intelligence on Ritual Chain.",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "MarketMind",
-    description:
-      "AI-powered Market Assistant",
+    title: "SIGGY Prediction Market",
+    description: "Read the signal. Price the future. Built on Ritual Chain.",
     type: "website",
-    url: "https://market-agent-starter.vercel.app",
-    siteName: "MarketMind",
+    url: process.env.NEXT_PUBLIC_APP_URL ?? "http://127.0.0.1:3000",
+    siteName: "SIGGY Prediction Market",
     locale: "en_US",
     images: [
       {
@@ -42,11 +33,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
-      >
-        {children}
+      <body suppressHydrationWarning>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
