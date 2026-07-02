@@ -2,6 +2,34 @@ import { keccak256, toHex, type Hex } from "viem";
 
 export const siggyAbi = [
   {
+    name: "MarketCreated",
+    type: "event",
+    inputs: [
+      { name: "marketId", type: "bytes32", indexed: true },
+      { name: "question", type: "string", indexed: false },
+      { name: "closeTime", type: "uint64", indexed: false },
+    ],
+  },
+  {
+    name: "PredictionPlaced",
+    type: "event",
+    inputs: [
+      { name: "marketId", type: "bytes32", indexed: true },
+      { name: "user", type: "address", indexed: true },
+      { name: "yes", type: "bool", indexed: false },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "MarketResolved",
+    type: "event",
+    inputs: [
+      { name: "marketId", type: "bytes32", indexed: true },
+      { name: "outcome", type: "bool", indexed: false },
+      { name: "agentJobId", type: "bytes32", indexed: true },
+    ],
+  },
+  {
     name: "enterMarket",
     type: "function",
     stateMutability: "payable",

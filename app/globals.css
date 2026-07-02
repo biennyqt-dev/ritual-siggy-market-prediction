@@ -491,6 +491,31 @@ button {
   text-transform: uppercase;
 }
 
+.metric-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metric-label-row select {
+  padding: 2px 4px;
+  color: var(--green-dark);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.metric-label-row select:focus-visible {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(25, 209, 132, 0.16);
+}
+
 .metric-strip strong {
   display: block;
   margin-top: 8px;

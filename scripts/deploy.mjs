@@ -54,6 +54,8 @@ const hash = await walletClient.deployContract({
   args: [account.address],
 });
 const receipt = await publicClient.waitForTransactionReceipt({ hash });
-console.log(`SIGGY_CONTRACT=${receipt.contractAddress}`);
+console.log(`SIGGY_RITUAL_CONTRACT_ADDRESS=${receipt.contractAddress}`);
+console.log(
+  `SIGGY_RITUAL_CONTRACT_DEPLOYMENT_BLOCK=${receipt.blockNumber.toString()}`
+);
 console.log(`TX_HASH=${hash}`);
-

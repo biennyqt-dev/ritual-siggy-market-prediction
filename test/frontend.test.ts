@@ -98,4 +98,47 @@ describe("SIGGY async lifecycle contract", () => {
     expect(intelRoute).not.toContain("SIGGY research preview");
     expect(gdelt).toContain("(matched / terms.length) * 100");
   });
+
+  it("uses only SIGGY contract events for dashboard protocol statistics", async () => {
+    const fs = await import("node:fs");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const statsRoute = fs.readFileSync(
+      "app/api/protocol-stats/route.ts",
+      "utf8"
+    );
+    const statsServer = fs.readFileSync(
+      "src/lib/protocol-stats-server.ts",
+      "utf8"
+    );
+
+    expect(dashboard).toContain("/api/protocol-stats?timeframe=");
+    expect(dashboard).toContain("formatProtocolVolume");
+    expect(dashboard).not.toContain(
+      "markets.reduce((sum, market) => sum + market.volume"
+    );
+    expect(statsRoute).toContain("configuredProtocolAddress");
+    expect(statsServer).toContain('eventName: "MarketCreated"');
+    expect(statsServer).toContain('eventName: "MarketResolved"');
+    expect(statsServer).toContain('eventName: "PredictionPlaced"');
+    expect(statsServer).not.toContain("Polymarket");
+    expect(statsServer).not.toContain("Math.random");
+  });
+
+  it("shows the transaction warning only for an invalid SIGGY contract", async () => {
+    const fs = await import("node:fs");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const statsRoute = fs.readFileSync(
+      "app/api/protocol-stats/route.ts",
+      "utf8"
+    );
+
+    expect(dashboard).toContain(
+      "Transactions are disabled until the SIGGY Ritual contract is configured."
+    );
+    expect(dashboard).toContain('protocolStatsStatus === "loading"');
+    expect(dashboard).toContain("contractConfigured");
+    expect(statsRoute).toContain("protocolContractHasCode");
+    expect(statsRoute).toContain("missing-or-invalid-contract-address");
+    expect(statsRoute).toContain("address-has-no-contract-code");
+  });
 });

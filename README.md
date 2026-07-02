@@ -35,7 +35,8 @@ Copy `.env.example` to `.env.local` to override the defaults:
 ```dotenv
 RITUAL_RPC_URL=https://rpc.ritualfoundation.org
 NEXT_PUBLIC_RITUAL_RPC_URL=https://rpc.ritualfoundation.org
-NEXT_PUBLIC_SIGGY_CONTRACT=
+SIGGY_RITUAL_CONTRACT_ADDRESS=
+SIGGY_RITUAL_CONTRACT_DEPLOYMENT_BLOCK=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -56,13 +57,14 @@ npm run verify:chain
 npm run deploy:ritual
 ```
 
-The deployment script compiles `contracts/src/SiggyPredictionMarket.sol`, deploys it to Ritual Testnet (chain ID `1979`), waits for confirmation, and prints the contract address. Add that address to `.env.local`:
+The deployment script compiles `contracts/src/SiggyPredictionMarket.sol`, deploys it to Ritual Testnet (chain ID `1979`), waits for confirmation, and prints the contract address plus deployment block. Add both values to `.env.local` and to the Vercel project environment:
 
 ```dotenv
-NEXT_PUBLIC_SIGGY_CONTRACT=0x...
+SIGGY_RITUAL_CONTRACT_ADDRESS=0x...
+SIGGY_RITUAL_CONTRACT_DEPLOYMENT_BLOCK=123456
 ```
 
-Restart the app. Positions will then submit real wallet transactions through the configured contract.
+Restart or redeploy the app. Positions will then submit real wallet transactions through the configured contract. The dashboard’s active-market count and selectable 24-hour, 7-day, 30-day, and all-time RIT volume are aggregated only from this contract’s `MarketCreated`, `MarketResolved`, and `PredictionPlaced` events. External discovery feeds never contribute to these protocol statistics.
 
 ## Verification
 

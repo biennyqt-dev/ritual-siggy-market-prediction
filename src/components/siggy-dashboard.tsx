@@ -27,6 +27,7 @@ import {
   encodeFunctionData,
   formatEther,
   parseEther,
+  type Address,
 } from "viem";
 import {
   useAccount,
@@ -43,7 +44,12 @@ import {
   marketsFromEvents,
   prioritizeMarkets,
 } from "@/lib/polymarket";
-import { SIGGY_CONTRACT } from "@/lib/ritual";
+import {
+  formatProtocolVolume,
+  PROTOCOL_TIMEFRAME_LABELS,
+  PROTOCOL_TIMEFRAMES,
+  type ProtocolTimeframe,
+} from "@/lib/protocol-stats";
 import {
   bufferedGas,
   friendlyTradeError,
@@ -61,6 +67,18 @@ import type {
 
 type LiveStatus = "loading" | "live" | "delayed";
 type StreamStatus = "connecting" | "live" | "offline";
+type ProtocolStatsStatus = "loading" | "live" | "delayed" | "unconfigured";
+
+interface ProtocolStatsResponse {
+  activeMarkets: number | null;
+  contractAddress: Address | null;
+  contractConfigured: boolean;
+  error?: string;
+  latestBlock?: string;
+  timeframe: ProtocolTimeframe;
+  updatedAt: string;
+  volumeWei: string;
+}
 
 const STATUS_LABELS: Record<AsyncStatus, string> = {
   IDLE: "Ready",
@@ -207,7 +225,7 @@ export function SiggyDashboard() {
   const [feedStatus, setFeedStatus] = useState<LiveStatus>("loading");
   const [streamStatus, setStreamStatus] =
     useState<StreamStatus>("connecting");
-  const [feedUpdatedAt, setFeedUpdatedAt] = useState<number | null>(null);
+  const [, setFeedUpdatedAt] = useState<number | null>(null);
   const [feedError, setFeedError] = useState("");
   const [history, setHistory] = useState<PricePoint[]>([]);
   const [historyStatus, setHistoryStatus] =
@@ -233,6 +251,13 @@ export function SiggyDashboard() {
   const [txStatus, setTxStatus] = useState<AsyncStatus>("IDLE");
   const [message, setMessage] = useState("");
   const [lastTxHash, setLastTxHash] = useState<`0x${string}` | null>(null);
+  const [protocolTimeframe, setProtocolTimeframe] =
+    useState<ProtocolTimeframe>("24h");
+  const [protocolStatsStatus, setProtocolStatsStatus] =
+    useState<ProtocolStatsStatus>("loading");
+  const [protocolStats, setProtocolStats] =
+    useState<ProtocolStatsResponse | null>(null);
+  const [protocolRefreshVersion, setProtocolRefreshVersion] = useState(0);
   const [sharePosition, setSharePosition] = useState<PositionRecord | null>(
     null
   );
@@ -257,8 +282,11 @@ export function SiggyDashboard() {
         .join(","),
     [markets]
   );
-  const contractConfigured =
-    SIGGY_CONTRACT !== "0x0000000000000000000000000000000000000000";
+  const siggyContractAddress =
+    protocolStats?.contractConfigured && protocolStats.contractAddress
+      ? protocolStats.contractAddress
+      : null;
+  const contractConfigured = Boolean(siggyContractAddress);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("siggy-theme");
@@ -282,6 +310,36 @@ export function SiggyDashboard() {
     window.addEventListener("keydown", focusSearch);
     return () => window.removeEventListener("keydown", focusSearch);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProtocolStats() {
+      try {
+        const response = await fetch(
+          `/api/protocol-stats?timeframe=${protocolTimeframe}`,
+          { cache: "no-store" }
+        );
+        const data = (await response.json()) as ProtocolStatsResponse;
+        if (!active) return;
+        setProtocolStats(data);
+        if (!data.contractConfigured) {
+          setProtocolStatsStatus("unconfigured");
+        } else {
+          setProtocolStatsStatus(response.ok ? "live" : "delayed");
+        }
+      } catch {
+        if (active) setProtocolStatsStatus("delayed");
+      }
+    }
+
+    loadProtocolStats();
+    const timer = window.setInterval(loadProtocolStats, 5_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [protocolRefreshVersion, protocolTimeframe]);
 
   useEffect(() => {
     const needle = query.trim();
@@ -456,7 +514,8 @@ export function SiggyDashboard() {
   }, [address]);
 
   useEffect(() => {
-    if (!contractConfigured || !publicClient) return;
+    if (!siggyContractAddress || !publicClient) return;
+    const contractAddress = siggyContractAddress;
     const openPositions = positions.filter(
       (position) => position.status === "OPEN" && position.marketKey
     );
@@ -468,7 +527,7 @@ export function SiggyDashboard() {
         openPositions.map(async (position) => {
           try {
             const market = await publicClient!.readContract({
-              address: SIGGY_CONTRACT,
+              address: contractAddress,
               abi: siggyAbi,
               functionName: "markets",
               args: [position.marketKey!],
@@ -513,7 +572,7 @@ export function SiggyDashboard() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [address, contractConfigured, positions, publicClient]);
+  }, [address, positions, publicClient, siggyContractAddress]);
 
   useEffect(() => {
     if (!selected) return;
@@ -593,10 +652,6 @@ export function SiggyDashboard() {
     [markets]
   );
 
-  const totalVolume = useMemo(
-    () => markets.reduce((sum, market) => sum + market.volume, 0),
-    [markets]
-  );
   const marketAlerts = useMemo(
     () =>
       [...markets]
@@ -670,6 +725,8 @@ export function SiggyDashboard() {
       setMessage("The SIGGY Ritual contract is not configured.");
       return;
     }
+    const contractAddress = siggyContractAddress;
+    if (!contractAddress) return;
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) {
       setMessage("Enter a valid RITUAL amount.");
@@ -696,7 +753,7 @@ export function SiggyDashboard() {
 
       for (const candidateKey of candidateKeys) {
         const candidateMarket = await publicClient.readContract({
-          address: SIGGY_CONTRACT,
+          address: contractAddress,
           abi: siggyAbi,
           functionName: "markets",
           args: [candidateKey],
@@ -723,7 +780,7 @@ export function SiggyDashboard() {
       const stake = parseEther(amount);
       const gasEstimate = await publicClient.estimateContractGas({
         account: address,
-        address: SIGGY_CONTRACT,
+        address: contractAddress,
         abi: siggyAbi,
         functionName: "enterMarket",
         args,
@@ -735,7 +792,7 @@ export function SiggyDashboard() {
         args,
       });
       txHash = await sendTransactionAsync({
-        to: SIGGY_CONTRACT,
+        to: contractAddress,
         data,
         value: stake,
         gas: bufferedGas(gasEstimate),
@@ -766,6 +823,7 @@ export function SiggyDashboard() {
       setPositions(next);
       window.localStorage.setItem(localKey(address), JSON.stringify(next));
       setTxStatus("SETTLED");
+      setProtocolRefreshVersion((version) => version + 1);
       setMessage(
         "Position recorded on Ritual Testnet. It stays OPEN until the market resolves on-chain."
       );
@@ -939,17 +997,56 @@ export function SiggyDashboard() {
           <section className="metric-strip" aria-label="Market overview">
             <div>
               <span>Active markets</span>
-              <strong>{feedStatus === "loading" ? "—" : markets.length}</strong>
+              <strong>
+                {protocolStatsStatus === "loading"
+                  ? "—"
+                  : protocolStats?.activeMarkets ?? "—"}
+              </strong>
               <small>
-                <Activity size={13} /> {updatedLabel(feedUpdatedAt)}
+                <Activity size={13} />{" "}
+                {protocolStatsStatus === "unconfigured"
+                  ? "SIGGY contract not configured"
+                  : updatedLabel(
+                      protocolStats?.updatedAt
+                        ? new Date(protocolStats.updatedAt).getTime()
+                        : null
+                    )}
               </small>
             </div>
             <div>
-              <span>24h volume</span>
-              <strong>{markets.length ? money(totalVolume) : "—"}</strong>
-              <small className={priceFeedLive ? "positive" : ""}>
+              <div className="metric-label-row">
+                <span>{PROTOCOL_TIMEFRAME_LABELS[protocolTimeframe]}</span>
+                <select
+                  aria-label="Protocol volume timeframe"
+                  value={protocolTimeframe}
+                  onChange={(event) =>
+                    setProtocolTimeframe(
+                      event.target.value as ProtocolTimeframe
+                    )
+                  }
+                >
+                  {PROTOCOL_TIMEFRAMES.map((timeframe) => (
+                    <option value={timeframe} key={timeframe}>
+                      {timeframe === "all" ? "ALL" : timeframe.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <strong>
+                {protocolStatsStatus !== "live" ||
+                !protocolStats?.contractConfigured
+                  ? "—"
+                  : formatProtocolVolume(BigInt(protocolStats.volumeWei))}
+              </strong>
+              <small
+                className={protocolStatsStatus === "live" ? "positive" : ""}
+              >
                 <TrendingUp size={13} />{" "}
-                {streamStatus === "live" ? "streaming CLOB prices" : "Gamma market data"}
+                {protocolStatsStatus === "live"
+                  ? "SIGGY protocol activity"
+                  : protocolStatsStatus === "unconfigured"
+                    ? "waiting for SIGGY contract"
+                    : "protocol index syncing"}
               </small>
             </div>
             <div>
@@ -1303,6 +1400,7 @@ export function SiggyDashboard() {
                     className="primary-button place-button"
                     onClick={placePrediction}
                     disabled={
+                      protocolStatsStatus === "loading" ||
                       !contractConfigured ||
                       txStatus === "SUBMITTING" ||
                       txStatus === "PENDING_COMMITMENT"
@@ -1313,9 +1411,13 @@ export function SiggyDashboard() {
                     {STATUS_LABELS[txStatus]}
                   </button>
                   <p className="trade-note">
-                    {contractConfigured
+                    {protocolStatsStatus === "unconfigured"
+                      ? "Transactions are disabled until the SIGGY Ritual contract is configured."
+                      : contractConfigured
                       ? "Transactions settle through the configured SIGGY contract."
-                      : "Transactions are disabled until the SIGGY Ritual contract is configured."}
+                      : protocolStatsStatus === "loading"
+                        ? "Verifying the configured SIGGY Ritual contract."
+                        : "The SIGGY protocol configuration check is temporarily unavailable."}
                   </p>
                   {message ? (
                     <div className="inline-message" role="status">
