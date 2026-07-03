@@ -35,7 +35,7 @@ interface CacheEntry {
 const statsCache = new Map<string, CacheEntry>();
 const deploymentBlockCache = new Map<Address, bigint>();
 
-function createProtocolClient() {
+export function createProtocolClient() {
   return createPublicClient({
     chain: ritualChain,
     transport: http(
@@ -59,7 +59,7 @@ async function hasCodeAt(
   }
 }
 
-async function findDeploymentBlock(
+export async function findDeploymentBlock(
   client: PublicClient,
   address: Address,
   latestBlock: bigint
@@ -86,7 +86,7 @@ async function findDeploymentBlock(
   return low;
 }
 
-async function blockAtOrAfterTimestamp(
+export async function blockAtOrAfterTimestamp(
   client: PublicClient,
   timestamp: number,
   deploymentBlock: bigint,

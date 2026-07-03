@@ -30,6 +30,15 @@ export const siggyAbi = [
     ],
   },
   {
+    name: "WinningsClaimed",
+    type: "event",
+    inputs: [
+      { name: "marketId", type: "bytes32", indexed: true },
+      { name: "user", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
     name: "enterMarket",
     type: "function",
     stateMutability: "payable",

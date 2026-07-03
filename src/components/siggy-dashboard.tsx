@@ -17,6 +17,7 @@ import {
   Share2,
   Sparkles,
   Sun,
+  Trophy,
   TrendingUp,
   Volume2,
   VolumeX,
@@ -68,6 +69,7 @@ import type {
 type LiveStatus = "loading" | "live" | "delayed";
 type StreamStatus = "connecting" | "live" | "offline";
 type ProtocolStatsStatus = "loading" | "live" | "delayed" | "unconfigured";
+type LeaderboardStatus = "loading" | "live" | "delayed" | "unconfigured";
 
 interface ProtocolStatsResponse {
   activeMarkets: number | null;
@@ -78,6 +80,26 @@ interface ProtocolStatsResponse {
   timeframe: ProtocolTimeframe;
   updatedAt: string;
   volumeWei: string;
+}
+
+interface LeaderboardEntryResponse {
+  address: Address;
+  lastActive: string;
+  rank: number;
+  resolvedPredictions: number;
+  totalVolumeWei: string;
+  totalWins: number;
+  winRate: number;
+}
+
+interface LeaderboardResponse {
+  contractAddress: Address | null;
+  contractConfigured: boolean;
+  entries: LeaderboardEntryResponse[];
+  error?: string;
+  latestBlock?: string;
+  timeframe: ProtocolTimeframe;
+  updatedAt: string;
 }
 
 const STATUS_LABELS: Record<AsyncStatus, string> = {
@@ -236,7 +258,7 @@ export function SiggyDashboard() {
   const [signalsUpdatedAt, setSignalsUpdatedAt] = useState<number | null>(null);
   const [positions, setPositions] = useState<PositionRecord[]>([]);
   const [activeView, setActiveView] = useState<
-    "markets" | "signals" | "history" | "alerts"
+    "markets" | "leaderboard" | "signals" | "history" | "alerts"
   >("markets");
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState("0.10");
@@ -258,6 +280,13 @@ export function SiggyDashboard() {
   const [protocolStats, setProtocolStats] =
     useState<ProtocolStatsResponse | null>(null);
   const [protocolRefreshVersion, setProtocolRefreshVersion] = useState(0);
+  const [leaderboardTimeframe, setLeaderboardTimeframe] =
+    useState<ProtocolTimeframe>("24h");
+  const [leaderboardStatus, setLeaderboardStatus] =
+    useState<LeaderboardStatus>("loading");
+  const [leaderboard, setLeaderboard] =
+    useState<LeaderboardResponse | null>(null);
+  const [leaderboardRefreshVersion, setLeaderboardRefreshVersion] = useState(0);
   const [sharePosition, setSharePosition] = useState<PositionRecord | null>(
     null
   );
@@ -340,6 +369,36 @@ export function SiggyDashboard() {
       window.clearInterval(timer);
     };
   }, [protocolRefreshVersion, protocolTimeframe]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeaderboard() {
+      try {
+        const response = await fetch(
+          `/api/leaderboard?timeframe=${leaderboardTimeframe}`,
+          { cache: "no-store" }
+        );
+        const data = (await response.json()) as LeaderboardResponse;
+        if (!active) return;
+        setLeaderboard(data);
+        if (!data.contractConfigured) {
+          setLeaderboardStatus("unconfigured");
+        } else {
+          setLeaderboardStatus(response.ok ? "live" : "delayed");
+        }
+      } catch {
+        if (active) setLeaderboardStatus("delayed");
+      }
+    }
+
+    loadLeaderboard();
+    const timer = window.setInterval(loadLeaderboard, 5_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [leaderboardRefreshVersion, leaderboardTimeframe]);
 
   useEffect(() => {
     const needle = query.trim();
@@ -543,6 +602,7 @@ export function SiggyDashboard() {
         })
       );
       if (!active || !settlements.some((item) => item.resolved)) return;
+      setLeaderboardRefreshVersion((version) => version + 1);
 
       setPositions((current) => {
         let changed = false;
@@ -824,6 +884,7 @@ export function SiggyDashboard() {
       window.localStorage.setItem(localKey(address), JSON.stringify(next));
       setTxStatus("SETTLED");
       setProtocolRefreshVersion((version) => version + 1);
+      setLeaderboardRefreshVersion((version) => version + 1);
       setMessage(
         "Position recorded on Ritual Testnet. It stays OPEN until the market resolves on-chain."
       );
@@ -912,6 +973,14 @@ export function SiggyDashboard() {
             onClick={() => setActiveView("markets")}
           >
             <LayoutDashboard size={17} /> Markets
+          </button>
+          <button
+            type="button"
+            className={activeView === "leaderboard" ? "active" : ""}
+            onClick={() => setActiveView("leaderboard")}
+          >
+            <Trophy size={17} /> Leaderboard
+            <em>{leaderboard?.entries.length ?? 0}</em>
           </button>
           <button
             type="button"
@@ -1076,7 +1145,139 @@ export function SiggyDashboard() {
             </div>
           </section>
 
-          {activeView === "history" ? (
+          {activeView === "leaderboard" ? (
+            <section className="leaderboard-view">
+              <div className="section-head leaderboard-head">
+                <div>
+                  <span className="eyebrow">Confirmed on Ritual Chain</span>
+                  <h2>Prediction market leaderboard</h2>
+                  <p>
+                    Ranked only from final SIGGY resolutions and confirmed
+                    protocol volume.
+                  </p>
+                </div>
+                <div className="leaderboard-controls">
+                  <div
+                    className="leaderboard-timeframes"
+                    aria-label="Leaderboard timeframe"
+                  >
+                    {PROTOCOL_TIMEFRAMES.map((timeframe) => (
+                      <button
+                        type="button"
+                        className={
+                          leaderboardTimeframe === timeframe ? "active" : ""
+                        }
+                        onClick={() => setLeaderboardTimeframe(timeframe)}
+                        key={timeframe}
+                      >
+                        {timeframe === "all"
+                          ? "All Time"
+                          : timeframe.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                  <span
+                    className={`leaderboard-live ${leaderboardStatus}`}
+                    role="status"
+                  >
+                    <Radio size={12} />
+                    {leaderboardStatus === "live"
+                      ? "Live contract events"
+                      : leaderboardStatus === "loading"
+                        ? "Syncing contract events"
+                        : leaderboardStatus === "unconfigured"
+                          ? "Contract not configured"
+                          : "Indexer reconnecting"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="leaderboard-table" role="table">
+                <div className="leaderboard-row leaderboard-columns" role="row">
+                  <span role="columnheader">Rank</span>
+                  <span role="columnheader">Wallet address</span>
+                  <span role="columnheader">Total volume</span>
+                  <span role="columnheader">Wins</span>
+                  <span role="columnheader">Win rate</span>
+                  <span role="columnheader">Last active</span>
+                </div>
+                {leaderboardStatus === "loading" ? (
+                  <div className="leaderboard-empty">
+                    <Activity size={22} />
+                    <strong>Reading SIGGY contract events</strong>
+                    <span>Confirmed winners will appear after indexing.</span>
+                  </div>
+                ) : leaderboardStatus === "live" &&
+                  !leaderboard?.entries.length ? (
+                  <div className="leaderboard-empty">
+                    <Trophy size={22} />
+                    <strong>No confirmed winners yet.</strong>
+                    <span>
+                      Open and unresolved predictions are never ranked.
+                    </span>
+                  </div>
+                ) : leaderboardStatus === "unconfigured" ? (
+                  <div className="leaderboard-empty">
+                    <Trophy size={22} />
+                    <strong>SIGGY contract not configured</strong>
+                    <span>
+                      The leaderboard will remain empty until a valid contract
+                      is configured.
+                    </span>
+                  </div>
+                ) : leaderboardStatus === "delayed" ? (
+                  <div className="leaderboard-empty">
+                    <Radio size={22} />
+                    <strong>Leaderboard index is reconnecting</strong>
+                    <span>No cached or placeholder users are being shown.</span>
+                  </div>
+                ) : (
+                  leaderboard?.entries.map((entry) => (
+                    <div className="leaderboard-row" role="row" key={entry.address}>
+                      <span
+                        className={`leaderboard-rank rank-${entry.rank}`}
+                        role="cell"
+                      >
+                        {String(entry.rank).padStart(2, "0")}
+                      </span>
+                      <span className="leaderboard-wallet" role="cell">
+                        <i />
+                        <strong title={entry.address}>
+                          {entry.address.slice(0, 8)}…
+                          {entry.address.slice(-6)}
+                        </strong>
+                      </span>
+                      <strong role="cell">
+                        {formatProtocolVolume(BigInt(entry.totalVolumeWei))}
+                      </strong>
+                      <strong role="cell">{entry.totalWins}</strong>
+                      <span role="cell">{entry.winRate.toFixed(1)}%</span>
+                      <span role="cell">
+                        {new Date(entry.lastActive).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="leaderboard-foot">
+                <span>
+                  Source: SIGGY contract events only · Chain 1979
+                </span>
+                <span>
+                  {updatedLabel(
+                    leaderboard?.updatedAt
+                      ? new Date(leaderboard.updatedAt).getTime()
+                      : null
+                  )}
+                </span>
+              </div>
+            </section>
+          ) : activeView === "history" ? (
             <section className="history-view">
               <div className="section-head">
                 <div>

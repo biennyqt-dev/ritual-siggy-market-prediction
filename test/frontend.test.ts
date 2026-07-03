@@ -141,4 +141,25 @@ describe("SIGGY async lifecycle contract", () => {
     expect(statsRoute).toContain("missing-or-invalid-contract-address");
     expect(statsRoute).toContain("address-has-no-contract-code");
   });
+
+  it("builds the leaderboard only from final SIGGY contract activity", async () => {
+    const fs = await import("node:fs");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const route = fs.readFileSync("app/api/leaderboard/route.ts", "utf8");
+    const server = fs.readFileSync("src/lib/leaderboard-server.ts", "utf8");
+    const aggregator = fs.readFileSync("src/lib/leaderboard.ts", "utf8");
+
+    expect(dashboard).toContain("/api/leaderboard?timeframe=");
+    expect(dashboard).toContain("No confirmed winners yet.");
+    expect(dashboard).toContain("formatProtocolVolume");
+    expect(route).toContain("readProtocolLeaderboard");
+    expect(server).toContain('eventName: "PredictionPlaced"');
+    expect(server).toContain('eventName: "MarketResolved"');
+    expect(server).toContain('eventName: "WinningsClaimed"');
+    expect(server).not.toContain("Polymarket");
+    expect(server).not.toContain("Math.random");
+    expect(aggregator).toContain(
+      "user.totalWins > 0 && user.totalVolumeWei > 0n"
+    );
+  });
 });
