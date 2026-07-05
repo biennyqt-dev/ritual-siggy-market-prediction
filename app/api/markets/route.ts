@@ -1,44 +1,63 @@
-import { NextResponse } from "next/server";
-import {
-  GAMMA_ORIGIN,
-  marketsFromEvents,
-  prioritizeMarkets,
-} from "@/lib/polymarket";
+import { NextRequest, NextResponse } from "next/server";
+import { generateDailyMarkets } from "@/lib/market-generator";
 
-export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
-  const endpoint = query
-    ? `${GAMMA_ORIGIN}/public-search?q=${encodeURIComponent(
-        query
-      )}&events_status=active&keep_closed_markets=0&limit_per_type=20&search_profiles=false`
-    : `${GAMMA_ORIGIN}/events?active=true&closed=false&limit=100&order=volume_24hr&ascending=false`;
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const query = request.nextUrl.searchParams.get("q")?.trim().toLowerCase() ?? "";
+  const force = request.nextUrl.searchParams.has("regenerate");
+  const forceMock = request.nextUrl.searchParams.get("mode") === "mock";
 
   try {
-    const response = await fetch(endpoint, {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-    });
-    if (!response.ok) throw new Error(`Polymarket returned ${response.status}`);
-    const payload = (await response.json()) as unknown;
-    const markets = prioritizeMarkets(marketsFromEvents(payload));
-    if (!markets.length) throw new Error("No matching active markets");
+    const batch = await generateDailyMarkets({ force, forceMock });
+    const markets = query
+      ? batch.markets.filter((market) =>
+          [
+            market.question,
+            market.category,
+            market.description,
+            ...(market.tags ?? []),
+            ...(market.sourceLabels ?? []),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(query)
+        )
+      : batch.markets;
 
-    return NextResponse.json({
-      markets,
-      provider: "Polymarket Gamma",
-      query,
-      updatedAt: new Date().toISOString(),
-      live: true,
-    });
+    return NextResponse.json(
+      {
+        markets,
+        provider: batch.generator,
+        query,
+        updatedAt: batch.generatedAt,
+        live: markets.length > 0,
+        dataMode: batch.dataMode,
+        sources: batch.sources.map((source) => ({
+          provider: source.provider,
+          status: source.status,
+          signalCount: source.signals.length,
+          error: source.error,
+        })),
+        rejectedCount: batch.rejected.length,
+      },
+      {
+        headers: {
+          "Cache-Control": "s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       {
         markets: [],
-        provider: "Polymarket Gamma",
+        provider: "SIGGY Daily Market Generator",
         query,
         updatedAt: new Date().toISOString(),
         live: false,
-        error: error instanceof Error ? error.message : "Market feed unavailable",
+        dataMode: "MOCK",
+        error:
+          error instanceof Error ? error.message : "Market generation unavailable",
       },
       { status: 502 }
     );

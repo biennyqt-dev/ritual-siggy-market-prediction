@@ -36,15 +36,12 @@ import {
   usePublicClient,
   useSendTransaction,
 } from "wagmi";
+import { AdminMarketPanel } from "@/components/AdminMarketPanel";
+import { MarketDashboard } from "@/components/MarketDashboard";
+import { MarketDetails } from "@/components/MarketDetails";
 import { MarketChart } from "@/components/market-chart";
 import { ShareWin } from "@/components/share-win";
 import { WalletButton } from "@/components/wallet-button";
-import { gdeltUrl, signalsFromGdelt } from "@/lib/gdelt";
-import {
-  GAMMA_ORIGIN,
-  marketsFromEvents,
-  prioritizeMarkets,
-} from "@/lib/polymarket";
 import {
   formatProtocolVolume,
   PROTOCOL_TIMEFRAME_LABELS,
@@ -115,18 +112,11 @@ const STATUS_LABELS: Record<AsyncStatus, string> = {
   EXPIRED: "Expired",
 };
 
-function money(value: number, compact = true) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: compact ? 1 : 2,
-    notation: compact ? "compact" : "standard",
-  }).format(value);
-}
-
 function localKey(address?: string) {
   return `siggy-positions:${address?.toLowerCase() ?? "disconnected"}`;
 }
+
+const ADMIN_MARKETS_KEY = "siggy-admin-market-overrides";
 
 function updatedLabel(timestamp: number | null) {
   if (!timestamp) return "waiting for provider";
@@ -147,6 +137,7 @@ async function requestLiveMarkets(query = "", signal?: AbortSignal) {
     live?: boolean;
     updatedAt?: string;
     error?: string;
+    dataMode?: "LIVE" | "MIXED" | "MOCK";
   };
   if (localResponse.ok && localData.live && localData.markets?.length) {
     return {
@@ -154,59 +145,24 @@ async function requestLiveMarkets(query = "", signal?: AbortSignal) {
       updatedAt: localData.updatedAt
         ? new Date(localData.updatedAt).getTime()
         : Date.now(),
+      dataMode: localData.dataMode ?? "MIXED",
     };
   }
-
-  const endpoint = query
-    ? `${GAMMA_ORIGIN}/public-search?q=${encodeURIComponent(
-        query
-      )}&events_status=active&keep_closed_markets=0&limit_per_type=20&search_profiles=false`
-    : `${GAMMA_ORIGIN}/events?active=true&closed=false&limit=100&order=volume_24hr&ascending=false`;
-  const directResponse = await fetch(endpoint, {
-    cache: "no-store",
-    headers: { accept: "application/json" },
-    signal,
-  });
-  if (!directResponse.ok) {
-    throw new Error(
-      localData.error || `Polymarket returned ${directResponse.status}`
-    );
-  }
-  const directMarkets = prioritizeMarkets(
-    marketsFromEvents(await directResponse.json())
-  );
-  if (!directMarkets.length) throw new Error("No active markets returned");
-  return { markets: directMarkets, updatedAt: Date.now() };
+  throw new Error(localData.error || "SIGGY generator returned no markets");
 }
 
-async function requestLiveHistory(tokenId: string) {
+async function requestLiveHistory(marketId: string, probability: number) {
   const localResponse = await fetch(
-    `/api/market-history?tokenId=${encodeURIComponent(tokenId)}&interval=1w`,
+    `/api/market-history?marketId=${encodeURIComponent(
+      marketId
+    )}&probability=${encodeURIComponent(probability)}`,
     { cache: "no-store" }
   );
   const localData = (await localResponse.json()) as {
     history?: PricePoint[];
   };
-  if (localResponse.ok) return localData.history ?? [];
-
-  const url = new URL("https://clob.polymarket.com/prices-history");
-  url.searchParams.set("market", tokenId);
-  url.searchParams.set("interval", "1w");
-  url.searchParams.set("fidelity", "60");
-  const directResponse = await fetch(url, {
-    cache: "no-store",
-    headers: { accept: "application/json" },
-  });
-  if (!directResponse.ok) {
-    throw new Error(`CLOB history returned ${directResponse.status}`);
-  }
-  const directData = (await directResponse.json()) as {
-    history?: Array<{ t: number; p: number }>;
-  };
-  return (directData.history ?? []).map((point) => ({
-    time: Number(point.t),
-    value: Number(point.p) * 100,
-  }));
+  if (!localResponse.ok) throw new Error("Confidence history unavailable");
+  return localData.history ?? [];
 }
 
 async function requestLiveSignals(question: string) {
@@ -227,18 +183,7 @@ async function requestLiveSignals(question: string) {
         : Date.now(),
     };
   }
-
-  const directResponse = await fetch(gdeltUrl(question), {
-    cache: "no-store",
-    headers: { accept: "application/json" },
-  });
-  if (!directResponse.ok) {
-    throw new Error(`GDELT returned ${directResponse.status}`);
-  }
-  return {
-    signals: signalsFromGdelt(await directResponse.json(), question),
-    updatedAt: Date.now(),
-  };
+  throw new Error("Live news signals are unavailable");
 }
 
 export function SiggyDashboard() {
@@ -247,6 +192,9 @@ export function SiggyDashboard() {
   const [feedStatus, setFeedStatus] = useState<LiveStatus>("loading");
   const [streamStatus, setStreamStatus] =
     useState<StreamStatus>("connecting");
+  const [marketDataMode, setMarketDataMode] = useState<
+    "LIVE" | "MIXED" | "MOCK"
+  >("MIXED");
   const [, setFeedUpdatedAt] = useState<number | null>(null);
   const [feedError, setFeedError] = useState("");
   const [history, setHistory] = useState<PricePoint[]>([]);
@@ -258,7 +206,7 @@ export function SiggyDashboard() {
   const [signalsUpdatedAt, setSignalsUpdatedAt] = useState<number | null>(null);
   const [positions, setPositions] = useState<PositionRecord[]>([]);
   const [activeView, setActiveView] = useState<
-    "markets" | "leaderboard" | "signals" | "history" | "alerts"
+    "markets" | "leaderboard" | "signals" | "history" | "alerts" | "studio"
   >("markets");
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState("0.10");
@@ -303,14 +251,6 @@ export function SiggyDashboard() {
 
   const selected =
     markets.find((market) => market.id === selectedId) ?? markets[0] ?? null;
-  const tokenSubscription = useMemo(
-    () =>
-      markets
-        .map((market) => market.tokenId)
-        .filter((tokenId): tokenId is string => Boolean(tokenId))
-        .join(","),
-    [markets]
-  );
   const siggyContractAddress =
     protocolStats?.contractConfigured && protocolStats.contractAddress
       ? protocolStats.contractAddress
@@ -431,121 +371,49 @@ export function SiggyDashboard() {
       try {
         const data = await requestLiveMarkets();
         if (!active) return;
-        setMarkets(data.markets);
+        let nextMarkets = data.markets;
+        try {
+          const saved = JSON.parse(
+            window.localStorage.getItem(ADMIN_MARKETS_KEY) || "[]"
+          ) as PredictionMarket[];
+          const overrides = new Map(saved.map((market) => [market.id, market]));
+          const manual = saved.filter((market) => !market.generated);
+          nextMarkets = [
+            ...data.markets.map((market) => overrides.get(market.id) ?? market),
+            ...manual.filter(
+              (market) => !data.markets.some((item) => item.id === market.id)
+            ),
+          ];
+        } catch {
+          // Invalid local dev overrides should never block the live generator.
+        }
+        setMarkets(nextMarkets);
         setSelectedId((current) =>
-          data.markets?.some((market) => market.id === current)
+          nextMarkets.some((market) => market.id === current)
             ? current
-            : data.markets![0].id
+            : nextMarkets[0].id
         );
         setFeedStatus("live");
+        setStreamStatus("live");
+        setMarketDataMode(data.dataMode);
         setFeedUpdatedAt(data.updatedAt);
         setFeedError("");
       } catch (error) {
         if (!active) return;
         setFeedStatus("delayed");
+        setStreamStatus("offline");
         setFeedError(
           error instanceof Error ? error.message : "Market feed unavailable"
         );
       }
     }
     load();
-    const timer = window.setInterval(load, 15_000);
+    const timer = window.setInterval(load, 60_000);
     return () => {
       active = false;
       window.clearInterval(timer);
     };
   }, []);
-
-  useEffect(() => {
-    if (!tokenSubscription) return;
-
-    let disposed = false;
-    let socket: WebSocket | null = null;
-    let heartbeat: number | undefined;
-    let reconnect: number | undefined;
-    let attempts = 0;
-    const assetIds = tokenSubscription.split(",");
-
-    function updatePrice(assetId: string, rawPrice: unknown) {
-      const price = Number(rawPrice);
-      if (!Number.isFinite(price) || price < 0 || price > 1) return;
-      setMarkets((current) =>
-        current.map((market) =>
-          market.tokenId === assetId
-            ? { ...market, probability: price * 100 }
-            : market
-        )
-      );
-      setFeedUpdatedAt(Date.now());
-      setStreamStatus("live");
-    }
-
-    function handlePayload(payload: unknown) {
-      const events = Array.isArray(payload) ? payload : [payload];
-      for (const value of events) {
-        if (!value || typeof value !== "object") continue;
-        const event = value as Record<string, unknown>;
-        if (Array.isArray(event.price_changes)) {
-          for (const item of event.price_changes) {
-            if (!item || typeof item !== "object") continue;
-            const change = item as Record<string, unknown>;
-            updatePrice(String(change.asset_id ?? ""), change.price);
-          }
-        } else if (event.asset_id && event.price !== undefined) {
-          updatePrice(String(event.asset_id), event.price);
-        }
-      }
-    }
-
-    function connect() {
-      if (disposed) return;
-      setStreamStatus("connecting");
-      socket = new WebSocket(
-        "wss://ws-subscriptions-clob.polymarket.com/ws/market"
-      );
-      socket.onopen = () => {
-        attempts = 0;
-        setStreamStatus("live");
-        socket?.send(
-          JSON.stringify({
-            assets_ids: assetIds,
-            type: "market",
-            custom_feature_enabled: true,
-          })
-        );
-        heartbeat = window.setInterval(() => {
-          if (socket?.readyState === WebSocket.OPEN) socket.send("PING");
-        }, 10_000);
-      };
-      socket.onmessage = (message) => {
-        if (message.data === "PONG") return;
-        try {
-          handlePayload(JSON.parse(String(message.data)));
-        } catch {
-          // Ignore non-JSON heartbeat frames from the provider.
-        }
-      };
-      socket.onerror = () => setStreamStatus("offline");
-      socket.onclose = () => {
-        if (heartbeat) window.clearInterval(heartbeat);
-        if (disposed) return;
-        setStreamStatus("offline");
-        attempts += 1;
-        reconnect = window.setTimeout(
-          connect,
-          Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5))
-        );
-      };
-    }
-
-    connect();
-    return () => {
-      disposed = true;
-      if (heartbeat) window.clearInterval(heartbeat);
-      if (reconnect) window.clearTimeout(reconnect);
-      socket?.close();
-    };
-  }, [tokenSubscription]);
 
   useEffect(() => {
     let nextPositions: PositionRecord[];
@@ -638,13 +506,11 @@ export function SiggyDashboard() {
     if (!selected) return;
     let active = true;
     async function loadHistory() {
-      if (!selected.tokenId) {
-        setHistory([]);
-        setHistoryStatus("delayed");
-        return;
-      }
       try {
-        const historyData = await requestLiveHistory(selected.tokenId);
+        const historyData = await requestLiveHistory(
+          selected.id,
+          selected.probability
+        );
         if (active) {
           setHistory(historyData);
           setHistoryStatus("live");
@@ -677,7 +543,7 @@ export function SiggyDashboard() {
     // Primitive market identity fields prevent price-stream ticks from
     // restarting both provider polling loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.id, selected?.question, selected?.tokenId]);
+  }, [selected?.id, selected?.probability, selected?.question]);
 
   const filteredMarkets = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -688,6 +554,10 @@ export function SiggyDashboard() {
       ).values()
     );
     return merged.filter((market) => {
+      const isPublished =
+        market.publicationStatus !== "REJECTED" &&
+        market.publicationStatus !== "RESOLVED" &&
+        market.publicationStatus !== "DRAFT";
       const categoryMatches =
         categoryFilter === "All" || market.category === categoryFilter;
       const queryMatches =
@@ -695,7 +565,7 @@ export function SiggyDashboard() {
         `${market.question} ${market.category} ${market.description} ${market.slug}`
           .toLowerCase()
           .includes(needle);
-      return categoryMatches && queryMatches;
+      return isPublished && categoryMatches && queryMatches;
     });
   }, [categoryFilter, markets, query, remoteSearchMarkets]);
 
@@ -726,12 +596,12 @@ export function SiggyDashboard() {
   const alertCount = Math.min(99, signals.length + marketAlerts.length);
   const priceFeedLabel =
     streamStatus === "live"
-      ? "Live price stream"
+      ? "SIGGY generator live"
       : feedStatus === "live"
-        ? "Live market feed"
+        ? "Generated market feed"
         : feedStatus === "loading"
           ? "Connecting live feeds"
-          : "Feed delayed";
+          : "Generator delayed";
   const priceFeedLive = streamStatus === "live" || feedStatus === "live";
 
   function selectMarket(market: PredictionMarket) {
@@ -747,6 +617,14 @@ export function SiggyDashboard() {
       behavior: "smooth",
       block: "start",
     });
+  }
+
+  function updateAdminMarkets(nextMarkets: PredictionMarket[]) {
+    setMarkets(nextMarkets);
+    window.localStorage.setItem(
+      ADMIN_MARKETS_KEY,
+      JSON.stringify(nextMarkets)
+    );
   }
 
   function toggleTheme() {
@@ -1006,6 +884,14 @@ export function SiggyDashboard() {
             <Bell size={17} /> Alerts
             <em>{alertCount}</em>
           </button>
+          <span className="nav-label">Build</span>
+          <button
+            type="button"
+            className={activeView === "studio" ? "active" : ""}
+            onClick={() => setActiveView("studio")}
+          >
+            <Sparkles size={17} /> Market studio
+          </button>
         </nav>
 
         <div className="agent-card">
@@ -1015,8 +901,8 @@ export function SiggyDashboard() {
           <span className="eyebrow">Sovereign intelligence</span>
           <strong>News enters. Signals emerge.</strong>
           <p>
-            SIGGY maps live reporting to active markets and explains the
-            catalyst.
+            SIGGY converts live crypto, AI, Ritual, on-chain, GitHub, and news
+            signals into objective daily markets.
           </p>
           <div className="verified-row">
             <span className="status-dot" /> Ritual agent ready
@@ -1145,7 +1031,22 @@ export function SiggyDashboard() {
             </div>
           </section>
 
-          {activeView === "leaderboard" ? (
+          {activeView === "markets" || activeView === "signals" ? (
+            <MarketDashboard
+              markets={markets}
+              selectedId={selected?.id}
+              onSelect={selectMarket}
+              dataMode={marketDataMode}
+            />
+          ) : null}
+
+          {activeView === "studio" ? (
+            <AdminMarketPanel
+              markets={markets}
+              onMarketsChange={updateAdminMarkets}
+              onSelect={selectMarket}
+            />
+          ) : activeView === "leaderboard" ? (
             <section className="leaderboard-view">
               <div className="section-head leaderboard-head">
                 <div>
@@ -1352,12 +1253,13 @@ export function SiggyDashboard() {
                 <article>
                   <Radio size={17} />
                   <div>
-                    <strong>Polymarket Gamma</strong>
+                    <strong>SIGGY Market Generator</strong>
                     <span>
-                      Live probabilities, volume and 24-hour market movement.
+                      Daily markets, confidence, odds, and quality-gate results
+                      from SIGGY&apos;s own source adapters.
                     </span>
                   </div>
-                  <b>MARKET DATA</b>
+                  <b>AI MARKETS</b>
                 </article>
                 <article>
                   <Bot size={17} />
@@ -1430,7 +1332,7 @@ export function SiggyDashboard() {
                     <span className="eyebrow">Market movement</span>
                     <h3>Probability alerts</h3>
                   </div>
-                  <span>Source: Polymarket Gamma</span>
+                  <span>Source: SIGGY live adapters</span>
                 </div>
                 {marketAlerts.map((market) => (
                   <button
@@ -1474,15 +1376,17 @@ export function SiggyDashboard() {
               <span className="eyebrow">Live provider status</span>
               <h2>
                 {feedStatus === "loading"
-                  ? "Connecting to live prediction markets"
-                  : "The live market feed is delayed"}
+                  ? "Generating today’s prediction markets"
+                  : "The SIGGY generator is delayed"}
               </h2>
               <p>
                 {feedStatus === "loading"
-                  ? "SIGGY is requesting active markets from Polymarket Gamma."
-                  : `${feedError || "Polymarket is not responding."} No demo values are being shown.`}
+                  ? "SIGGY is collecting crypto, AI, Ritual, on-chain, GitHub, and news signals."
+                  : `${
+                      feedError || "One or more live adapters are not responding."
+                    } Mock fallback is labeled whenever it is used.`}
               </p>
-              <small>Automatic retry runs every 15 seconds.</small>
+              <small>Automatic retry runs every 60 seconds.</small>
             </section>
           ) : (
             <>
@@ -1529,9 +1433,9 @@ export function SiggyDashboard() {
                   />
                   <div className="chart-legend">
                     <span><i className="yes-dot" /> Yes probability</span>
-                    <span><i className="signal-dot" /> Polymarket CLOB history</span>
-                    <span>Vol {money(selected.volume)}</span>
-                    <span>Liquidity {money(selected.liquidity)}</span>
+                    <span><i className="signal-dot" /> SIGGY confidence path</span>
+                    <span>AI confidence {selected.confidenceScore ?? 0}%</span>
+                    <span>{selected.riskLevel ?? "MEDIUM"} risk</span>
                   </div>
                 </div>
 
@@ -1685,7 +1589,9 @@ export function SiggyDashboard() {
                           <span>{market.category}</span>
                           <strong>{market.question}</strong>
                         </div>
-                        <span className="volume">{money(market.volume)}</span>
+                        <span className="volume">
+                          {market.confidenceScore ?? 0}% AI
+                        </span>
                         <div className="mini-probability">
                           <i style={{ width: `${market.probability}%` }} />
                         </div>
@@ -1702,37 +1608,7 @@ export function SiggyDashboard() {
                   </div>
                 </div>
 
-                <aside className="signal-panel">
-                  <div className="section-head">
-                    <div>
-                      <span className="eyebrow">SIGGY agent brief</span>
-                      <h2>What’s moving this?</h2>
-                    </div>
-                    <span className="ai-badge"><Bot size={13} /> AI output</span>
-                  </div>
-                  <p className="agent-summary">
-                    The market is being repriced around fresh reporting. SIGGY
-                    weighs recency, source overlap and direct relevance—not
-                    vibes in a trench coat.
-                  </p>
-                  <div className="signal-list">
-                    {signals.length ? (
-                      signals.slice(0, 4).map((signal) => (
-                        <a href={signal.url} target="_blank" rel="noreferrer" key={signal.url}>
-                          <span>{signal.relevance}% match</span>
-                          <strong>{signal.title}</strong>
-                          <small>{signal.domain}</small>
-                        </a>
-                      ))
-                    ) : (
-                      <div className="signal-empty">
-                        <Sparkles size={20} />
-                        <strong>Scanning live reporting</strong>
-                        <span>Relevant headlines will appear here.</span>
-                      </div>
-                    )}
-                  </div>
-                </aside>
+                <MarketDetails market={selected} />
               </section>
             </>
           )}

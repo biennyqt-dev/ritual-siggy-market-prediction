@@ -24,6 +24,34 @@ export interface PredictionMarket {
   change24h: number;
   tokenId?: string;
   sourceUrl: string;
+  generated?: boolean;
+  generatedAt?: string;
+  confidenceScore?: number;
+  yesOdds?: number;
+  noOdds?: number;
+  resolutionCriteria?: string;
+  resolutionSource?: string;
+  relevanceReason?: string;
+  aiReasoning?: string;
+  yesCase?: string;
+  noCase?: string;
+  riskLevel?: "LOW" | "MEDIUM" | "HIGH";
+  tags?: string[];
+  supportingData?: MarketSupportingDatum[];
+  sourceLabels?: string[];
+  dataMode?: "LIVE" | "MIXED" | "MOCK";
+  publicationStatus?: "DRAFT" | "APPROVED" | "REJECTED" | "RESOLVED";
+  trendingScore?: number;
+}
+
+export interface MarketSupportingDatum {
+  label: string;
+  value: string;
+  detail?: string;
+  source: string;
+  sourceUrl: string;
+  observedAt: string;
+  live: boolean;
 }
 
 export interface PricePoint {

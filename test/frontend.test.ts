@@ -49,7 +49,7 @@ describe("SIGGY async lifecycle contract", () => {
     expect(fs.statSync("public/siggy-logo.webp").size).toBeGreaterThan(10_000);
     expect(dashboard).toContain("/siggy-logo.webp");
     expect(dashboard).toContain('setActiveView("alerts")');
-    expect(dashboard).toContain("Polymarket Gamma");
+    expect(dashboard).toContain("SIGGY Market Generator");
     expect(dashboard).toContain("GDELT News");
     expect(dashboard).toContain("Ritual Chain");
     expect(styles).toContain(
@@ -72,7 +72,7 @@ describe("SIGGY async lifecycle contract", () => {
     expect(contract).toContain('{ name: "MarketClosed", type: "error"');
   });
 
-  it("uses live providers without fabricated market or chart fallbacks", async () => {
+  it("uses SIGGY-generated markets with transparent live or mock provenance", async () => {
     const fs = await import("node:fs");
     const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
     const chart = fs.readFileSync("src/components/market-chart.tsx", "utf8");
@@ -86,17 +86,37 @@ describe("SIGGY async lifecycle contract", () => {
 
     expect(dashboard).not.toContain("fallbackMarkets");
     expect(dashboard).not.toContain("Resilient preview");
-    expect(dashboard).toContain(
-      "wss://ws-subscriptions-clob.polymarket.com/ws/market"
-    );
-    expect(dashboard).toContain("No demo values are being shown.");
+    expect(dashboard).not.toContain("Polymarket");
+    expect(dashboard).toContain("SIGGY generator live");
+    expect(dashboard).toContain("Mock fallback is labeled whenever it is used.");
     expect(chart).not.toContain("Math.sin");
     expect(chart).not.toContain("Array.from({ length:");
-    expect(marketsRoute).toContain('cache: "no-store"');
-    expect(historyRoute).toContain('cache: "no-store"');
+    expect(marketsRoute).toContain("generateDailyMarkets");
+    expect(marketsRoute).toContain("dataMode");
+    expect(historyRoute).toContain("confidenceHistory");
+    expect(historyRoute).not.toContain("Polymarket");
     expect(intelRoute).toContain('cache: "no-store"');
     expect(intelRoute).not.toContain("SIGGY research preview");
     expect(gdelt).toContain("(matched / terms.length) * 100");
+  });
+
+  it("ships the daily market dashboard, reasoning panel, and admin studio", async () => {
+    const fs = await import("node:fs");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const cards = fs.readFileSync("src/components/MarketDashboard.tsx", "utf8");
+    const details = fs.readFileSync("src/components/MarketDetails.tsx", "utf8");
+    const admin = fs.readFileSync("src/components/AdminMarketPanel.tsx", "utf8");
+
+    expect(dashboard).toContain("<MarketDashboard");
+    expect(dashboard).toContain("<MarketDetails");
+    expect(dashboard).toContain("<AdminMarketPanel");
+    expect(cards).toContain("Today’s AI-generated markets");
+    expect(cards).toContain("Trending");
+    expect(details).toContain("OBJECTIVE RESOLUTION RULE");
+    expect(details).toContain("WHAT MAKES YES HAPPEN");
+    expect(admin).toContain("Regenerate live");
+    expect(admin).toContain("Test mock data");
+    expect(admin).toContain("Add draft");
   });
 
   it("uses only SIGGY contract events for dashboard protocol statistics", async () => {

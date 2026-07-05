@@ -1,14 +1,21 @@
 # SIGGY Prediction Market
 
-SIGGY is an AI-assisted prediction market dashboard built for Ritual Chain. It pairs live public prediction-market data with news intelligence, wallet connectivity, Ritual-native contracts, transaction history, and shareable win cards.
+SIGGY is an AI-powered daily prediction market platform built for Ritual Chain. It turns current crypto, AI, Ritual ecosystem, on-chain, DeFi, GitHub, news, macro, and optional X signals into objective YES/NO markets with transparent resolution rules.
 
 ## What is included
 
 - Green-and-white responsive financial dashboard
 - User-selectable light and dark Ritual themes
 - Toggleable arcade soundtrack with browser-safe user-controlled playback
-- Live market listings and probability history charts
-- Search-backed Polymarket discovery plus Crypto and TGE/Mainnet filters
+- Daily and real-time SIGGY-generated market listings
+- Search, Today, Trending, Crypto, AI, and Ritual discovery views
+- Confidence-history charts, suggested YES/NO odds, source labels, and deadlines
+- Quality gates for objectivity, deadline clarity, source trust, relevance, resolvability, and duplicate removal
+- Live CoinGecko, DefiLlama, GitHub, GDELT, Ritual RPC, and Ethereum RPC adapters
+- Optional X recent-search adapter with a clearly labeled mock fallback for development
+- AI reasoning panel with YES/NO cases, supporting data, and resolution criteria
+- Browser-local market studio for approval, rejection, editing, regeneration, manual drafts, and resolution testing
+- Daily Vercel cron route that refreshes and validates the market batch
 - GDELT news signals matched to the selected market
 - Injected-wallet connection and Ritual Testnet chain switching
 - Native RITUAL balance polling every five seconds
@@ -38,9 +45,13 @@ NEXT_PUBLIC_RITUAL_RPC_URL=https://rpc.ritualfoundation.org
 SIGGY_RITUAL_CONTRACT_ADDRESS=
 SIGGY_RITUAL_CONTRACT_DEPLOYMENT_BLOCK=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+ETHEREUM_RPC_URL=https://ethereum-rpc.publicnode.com
+X_BEARER_TOKEN=
+CRON_SECRET=
+NEXT_PUBLIC_ENABLE_MARKET_ADMIN=true
 ```
 
-The public dashboard works without a private key. External market/news requests use server-side routes so browser clients do not need provider credentials.
+The public dashboard works without a private key. CoinGecko, DefiLlama, GitHub, GDELT, Ritual RPC, and Ethereum RPC use server-side adapters and require no browser credentials. `X_BEARER_TOKEN` is optional. If live adapters are unavailable, the API returns deterministic mock-adapter markets marked `MOCK DATA`.
 
 ## Ritual Testnet deployment
 
@@ -64,7 +75,7 @@ SIGGY_RITUAL_CONTRACT_ADDRESS=0x...
 SIGGY_RITUAL_CONTRACT_DEPLOYMENT_BLOCK=123456
 ```
 
-Restart or redeploy the app. Positions will then submit real wallet transactions through the configured contract. The dashboard’s active-market count and selectable 24-hour, 7-day, 30-day, and all-time RIT volume are aggregated only from this contract’s `MarketCreated`, `MarketResolved`, and `PredictionPlaced` events. External discovery feeds never contribute to these protocol statistics.
+Restart or redeploy the app. Positions will then submit real wallet transactions through the configured contract. The dashboard’s active-market count and selectable 24-hour, 7-day, 30-day, and all-time RIT volume are aggregated only from this contract’s `MarketCreated`, `MarketResolved`, and `PredictionPlaced` events. Generator source signals never contribute to protocol statistics or leaderboard volume.
 
 ## Verification
 
@@ -80,16 +91,23 @@ The contract tests compile Solidity with `solc` and verify the canonical Ritual 
 ## Architecture
 
 - `app/` — Vercel-detectable Next.js dashboard, providers, and API routes
-- `src/components/` — wallet, chart, history, trading, and win-sharing UI
+- `app/api/cron/generate-markets/` — daily Vercel market-generation cron
+- `src/components/` — generated-market dashboard, reasoning, admin studio, wallet, charts, trading, and win-sharing UI
 - `src/agent/` and `src/tool/` — autonomous market-agent building blocks
 - `contracts/` — Solidity market contract, Foundry test, and deploy script
+- `src/lib/data-sources/` — replaceable live and mock data adapters
+- `src/lib/market-generator/` — daily generation, duplicate prevention, and quality checks
+- `src/lib/resolution-rules/` — objective source-specific resolution templates
+- `src/lib/ai-confidence/` — confidence, odds, movement, and risk scoring
 - `src/lib/` — Ritual chain configuration and shared market types
 - `public/` — logo, music, and static browser assets
 - `index.html` — static repository entry page; Next.js runs from `app/`
 - `scripts/` — local-key deployment and read-only chain checks
 - `test/` — Solidity compile and frontend state tests
 
-Market discovery currently reads Polymarket public data, while news intelligence reads GDELT. They are external discovery signals; settlement and position custody belong to the configured Ritual contract.
+Market discovery is generated entirely by SIGGY from its own adapter pipeline. No external prediction-market feed is imported. Source signals inform market creation only; settlement, protocol statistics, leaderboard results, and position custody belong to the configured Ritual contract.
+
+The admin studio is intentionally browser-local and does not receive a deployer key. Production approval shared across operators should be connected to an authenticated database or an on-chain governance workflow before enabling multiple administrators.
 
 ## Safety
 
