@@ -27,14 +27,12 @@ export const onchainAdapter: DataSourceAdapter = {
   async collect(now): Promise<DataSourceResult> {
     const ritualRpc =
       process.env.RITUAL_RPC_URL || "https://rpc.ritualfoundation.org";
-    const ethereumRpc =
-      process.env.ETHEREUM_RPC_URL || "https://ethereum-rpc.publicnode.com";
-    const [ritualBlock, ethereumGas] = await Promise.all([
+    const [ritualBlock, ritualGas] = await Promise.all([
       rpc<string>(ritualRpc, "eth_blockNumber", []),
-      rpc<string>(ethereumRpc, "eth_gasPrice", []),
+      rpc<string>(ritualRpc, "eth_gasPrice", []),
     ]);
     const blockNumber = Number(BigInt(ritualBlock));
-    const gasGwei = Number(BigInt(ethereumGas)) / 1e9;
+    const gasGwei = Number(BigInt(ritualGas)) / 1e9;
     const signals: MarketSignal[] = [
       {
         id: "ritual-block-height",
@@ -54,26 +52,26 @@ export const onchainAdapter: DataSourceAdapter = {
         detail: `Latest observed Ritual block ${blockNumber.toLocaleString()}`,
       },
       {
-        id: "ethereum-gas",
-        category: "On-chain",
+        id: "ritual-gas",
+        category: "Ritual",
         kind: "gas",
-        provider: "Ethereum RPC",
-        title: "Ethereum network gas",
-        metric: "Ethereum gas price",
+        provider: "Ritual RPC",
+        title: "Ritual Testnet gas",
+        metric: "Ritual gas price",
         currentValue: gasGwei,
         unit: "gwei",
         observedAt: now.toISOString(),
-        sourceUrl: "https://etherscan.io/gastracker",
-        resolutionSource: "Ethereum JSON-RPC eth_gasPrice at the stated deadline",
+        sourceUrl: "https://explorer.ritualfoundation.org",
+        resolutionSource: "Ritual Chain JSON-RPC eth_gasPrice at the stated deadline",
         live: true,
         trustScore: 93,
-        tags: ["ethereum", "gas", "on-chain"],
-        detail: `Latest eth_gasPrice ${gasGwei.toFixed(2)} gwei`,
+        tags: ["ritual", "gas", "on-chain", "testnet"],
+        detail: `Latest Ritual eth_gasPrice ${gasGwei.toFixed(2)} gwei`,
       },
     ];
 
     return {
-      provider: "Ritual + Ethereum RPC",
+      provider: "Ritual RPC",
       status: "live",
       signals,
       updatedAt: now.toISOString(),

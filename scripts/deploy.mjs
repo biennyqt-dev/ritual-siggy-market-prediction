@@ -9,10 +9,16 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const privateKey = process.env.PRIVATE_KEY;
+const rawPrivateKey = process.env.PRIVATE_KEY?.trim();
+const privateKey = rawPrivateKey?.startsWith("0x")
+  ? rawPrivateKey
+  : rawPrivateKey
+    ? `0x${rawPrivateKey}`
+    : undefined;
+
 if (!privateKey || !/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
   throw new Error(
-    "Set PRIVATE_KEY in a local environment file or terminal. Never paste it into chat."
+    "Set PRIVATE_KEY as 64 hex characters, with or without 0x, in a local environment file or terminal. Never paste it into chat."
   );
 }
 

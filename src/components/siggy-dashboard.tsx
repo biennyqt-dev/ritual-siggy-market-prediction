@@ -35,6 +35,7 @@ import {
   useBalance,
   usePublicClient,
   useSendTransaction,
+  useSwitchChain,
 } from "wagmi";
 import { AdminMarketPanel } from "@/components/AdminMarketPanel";
 import { MarketDashboard } from "@/components/MarketDashboard";
@@ -55,6 +56,7 @@ import {
   marketRoundKeys,
   siggyAbi,
 } from "@/lib/siggy-contract";
+import { ritualChain } from "@/lib/ritual";
 import type {
   AsyncStatus,
   NewsSignal,
@@ -241,12 +243,13 @@ export function SiggyDashboard() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const { address, isConnected } = useAccount();
+  const { address, chainId, isConnected } = useAccount();
   const { data: nativeBalance } = useBalance({
     address,
     query: { enabled: Boolean(address), refetchInterval: 5_000 },
   });
   const { sendTransactionAsync } = useSendTransaction();
+  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
   const publicClient = usePublicClient();
 
   const selected =
@@ -669,6 +672,15 @@ export function SiggyDashboard() {
     if (!Number.isFinite(value) || value <= 0) {
       setMessage("Enter a valid RITUAL amount.");
       return;
+    }
+    if (chainId !== ritualChain.id) {
+      try {
+        setMessage("Switch to Ritual Testnet in MetaMask to continue.");
+        await switchChainAsync({ chainId: ritualChain.id });
+      } catch {
+        setMessage("Please switch to Ritual Testnet before placing a position.");
+        return;
+      }
     }
 
     setMessage("");
@@ -1507,6 +1519,7 @@ export function SiggyDashboard() {
                     disabled={
                       protocolStatsStatus === "loading" ||
                       !contractConfigured ||
+                      isSwitchingChain ||
                       txStatus === "SUBMITTING" ||
                       txStatus === "PENDING_COMMITMENT"
                     }

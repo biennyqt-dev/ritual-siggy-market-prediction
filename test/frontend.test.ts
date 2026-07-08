@@ -182,4 +182,31 @@ describe("SIGGY async lifecycle contract", () => {
       "user.totalWins > 0 && user.totalVolumeWei > 0n"
     );
   });
+
+  it("keeps wallet and transaction execution on Ritual Testnet only", async () => {
+    const fs = await import("node:fs");
+    const ritual = fs.readFileSync("src/lib/ritual.ts", "utf8");
+    const dashboard = fs.readFileSync("src/components/siggy-dashboard.tsx", "utf8");
+    const wallet = fs.readFileSync("src/components/wallet-button.tsx", "utf8");
+    const onchain = fs.readFileSync("src/lib/data-sources/onchain.ts", "utf8");
+    const envExample = fs.readFileSync(".env.example", "utf8");
+    const readme = fs.readFileSync("README.md", "utf8");
+
+    expect(ritual).toContain("id: 1979");
+    expect(ritual).toContain("https://rpc.ritualfoundation.org");
+    expect(ritual).toContain("chains: [ritualChain]");
+    expect(wallet).toContain("Switch to Ritual");
+    expect(wallet).toContain("switchChain({ chainId: ritualChain.id })");
+    expect(dashboard).toContain("useSwitchChain");
+    expect(dashboard).toContain("chainId !== ritualChain.id");
+    expect(dashboard).toContain("await switchChainAsync({ chainId: ritualChain.id })");
+    expect(dashboard.indexOf("await switchChainAsync")).toBeLessThan(
+      dashboard.indexOf("await sendTransactionAsync")
+    );
+    expect(onchain).toContain("Ritual RPC");
+    expect(onchain).not.toContain("ETHEREUM_RPC_URL");
+    expect(`${envExample}\n${readme}`).not.toMatch(
+      /sepolia|11155111|goerli|ETHEREUM_RPC_URL|ethereum-rpc|Ethereum RPC|Ethereum JSON-RPC/i
+    );
+  });
 });

@@ -28,7 +28,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "deploy:ritual": "node --env-file-if-exists=.env.local scripts/deploy.mjs",
+    "deploy:ritual": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/deploy.mjs",
     "verify:chain": "node scripts/verify-chain.mjs"
   },
   "dependencies": {

@@ -13,6 +13,7 @@
 
 # testing
 /coverage
+/.ritual-build/
 
 # next.js
 /.next/

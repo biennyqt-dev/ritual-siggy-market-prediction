@@ -81,8 +81,8 @@ export function buildResolutionRule(
     const threshold = Math.max(1, Math.round(signal.currentValue * 1.2));
     const deadline = utcDeadline(now);
     return {
-      title: `Will Ethereum gas be above ${threshold} gwei at 23:55 UTC today?`,
-      criteria: `Resolve YES if eth_gasPrice from the stated Ethereum RPC is strictly above ${threshold} gwei at 23:55 UTC on ${deadline
+      title: `Will Ritual Testnet gas be above ${threshold} gwei at 23:55 UTC today?`,
+      criteria: `Resolve YES if eth_gasPrice from the Ritual Chain RPC is strictly above ${threshold} gwei at 23:55 UTC on ${deadline
         .toISOString()
         .slice(0, 10)}. Otherwise resolve NO.`,
       deadline: utcDeadline(now, 0, 23, 55).toISOString(),
