@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "SIGGY Prediction Market",
   description: "Live prediction markets and sovereign-agent intelligence on Ritual Chain.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/ritual-favicon.png",
   },
   openGraph: {
     title: "SIGGY Prediction Market",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/favicon.ico",
+        url: "/ritual-favicon.png",
       },
     ],
   },
